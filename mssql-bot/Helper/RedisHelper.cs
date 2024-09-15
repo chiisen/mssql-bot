@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using System.Reflection;
+using Newtonsoft.Json;
 using Spectre.Console;
 using StackExchange.Redis;
-using System.Reflection;
 
 namespace mssql_bot.helper
 {
@@ -18,7 +18,8 @@ namespace mssql_bot.helper
                 return;
             }
 
-            const string connectionString = "127.0.0.1:6379, abortConnect=false, connectRetry=5, connectTimeout=5000, syncTimeout=5000";
+            const string connectionString =
+                "127.0.0.1:6379, abortConnect=false, connectRetry=5, connectTimeout=5000, syncTimeout=5000";
             var options = ConfigurationOptions.Parse(connectionString);
             options.AllowAdmin = true;
             options.ReconnectRetryPolicy = new ExponentialRetry(3000);
@@ -153,7 +154,12 @@ namespace mssql_bot.helper
         /// <param name="cacheKey"></param>
         /// <param name="value"></param>
         /// <param name="db"></param>
-        public static void SetOtherValue<T>(string connectionString, string cacheKey, T value, int db = 0)
+        public static void SetOtherValue<T>(
+            string connectionString,
+            string cacheKey,
+            T value,
+            int db = 0
+        )
         {
             var options = ConfigurationOptions.Parse(connectionString);
             options.AllowAdmin = true;

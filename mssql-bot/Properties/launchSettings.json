@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "mssql-bot": {
+      "commandName": "Project",
+      "commandLineArgs": "checksp"
+    }
+  }
+}
