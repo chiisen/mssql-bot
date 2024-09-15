@@ -47,5 +47,5 @@ procedureName: CodeCreator_Recommend_Code =>
 ```
 var pattern = @"@Output_ErrorCode\s*=\s*-\d+";
 ```
-上面語法為查詢 `@Output_ErrorCode =` 為負值的部分
+上面語法為查詢 `@Output_ErrorCode =` 為負值的部分  
 可以依據需求調整查詢語法

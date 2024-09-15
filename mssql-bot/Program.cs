@@ -39,7 +39,7 @@ class Program
                 connection.Open();
                 AnsiConsole.MarkupLine($"[yellow]Connection opened successfully.[/]");
 
-                string pattern = @"@Output_ErrorCode\s*=\s*-\d+";
+                var pattern = @"@Output_ErrorCode\s*=\s*-\d+";
 
                 // 在這裡執行資料庫操作
 
