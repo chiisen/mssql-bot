@@ -42,3 +42,4 @@ WHERE
 }
 ```
 ![執行畫面](./images/MSSQL-BOT.png)
+執行後會把 `@Output_ErrorCode` 被付值為負值的地方列印在畫面上  
