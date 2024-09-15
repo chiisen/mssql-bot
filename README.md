@@ -45,3 +45,13 @@ WHERE
 ```
 ![執行畫面](./images/MSSQL-BOT.png)
 執行後會把 `@Output_ErrorCode` 被付值為負值的地方列印在畫面上  
+例如上圖畫面上的藍色字體，如下:
+```json
+procedureName: Activity_Calculate_Betting =>
+@Output_ErrorCode       = -1
+
+procedureName: CodeCreator_Recommend_Code =>
+@Output_ErrorCode = -1
+```
+就是找到有問題的 SP 名稱與執行語法  
+

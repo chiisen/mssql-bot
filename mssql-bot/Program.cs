@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Text.RegularExpressions;
 using Console = Colorful.Console;
 using System.Text.RegularExpressions;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 class Program
 {
     /// <summary>
@@ -17,6 +18,34 @@ class Program
 
     static void Main()
     {
+        /*
+        string sql = "SELECT * FROM Users WHERE UserId = 1";
+
+        // 使用 Microsoft.SqlServer.TransactSql.ScriptDom 解析 SQL
+        TSql130Parser parser = new TSql130Parser(false);
+        TSqlFragment fragment;
+        IList<ParseError> errors;
+
+        using (TextReader sqlReader = new StringReader(sql))
+        {
+            fragment = parser.Parse(sqlReader, out errors);
+        }
+
+        if (errors.Count > 0)
+        {
+            foreach (var error in errors)
+            {
+                Console.WriteLine($"Error: {error.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Parsing successful!");
+            // 這裡可以進一步處理 AST
+        }
+        */
+
+
         var bbConfig = RedisHelper.GetValue<DBConfig>("mssql-bot-connectionString");// 實際 key 為 `mssql-bot:mssql-bot-connectionString`
         if (bbConfig.connectionString == string.Empty)
         {
