@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Spectre.Console;
 using StackExchange.Redis;
 using System.Reflection;
 
@@ -53,7 +54,7 @@ namespace mssql_bot.helper
             var data = Redis!.StringGet($"{assemblyName}:{cacheKey}");
             if (data == RedisValue.EmptyString)
             {
-                Console.WriteLine($"empty data");
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
                 return default!;
             }
 
@@ -137,7 +138,7 @@ namespace mssql_bot.helper
             var data = OtherRedis!.StringGet($"{cacheKey}");
             if (data == RedisValue.EmptyString)
             {
-                Console.WriteLine($"empty data");
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
                 return default!;
             }
 

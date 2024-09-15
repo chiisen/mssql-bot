@@ -1,107 +1,61 @@
-﻿using mssql_bot.helper;
+﻿using Microsoft.SqlServer.TransactSql.ScriptDom;
+using mssql_bot;
+using mssql_bot.helper;
 using Newtonsoft.Json.Linq;
+using Spectre.Console;
 using System.Data.SqlClient;
-using System.Drawing;
 using System.Text.RegularExpressions;
-using Console = Colorful.Console;
-using System.Text.RegularExpressions;
-using Microsoft.SqlServer.TransactSql.ScriptDom;
+
+
 class Program
 {
     /// <summary>
-    /// DB 設定
+    /// 主迴圈
     /// </summary>
-    public class DBConfig
-    {
-        public string? connectionString { get; set; }
-    }
-
     static void Main()
     {
-        /*
-        string sql = "SELECT * FROM Users WHERE UserId = 1";
-
-        // 使用 Microsoft.SqlServer.TransactSql.ScriptDom 解析 SQL
-        TSql130Parser parser = new TSql130Parser(false);
-        TSqlFragment fragment;
-        IList<ParseError> errors;
-
-        using (TextReader sqlReader = new StringReader(sql))
-        {
-            fragment = parser.Parse(sqlReader, out errors);
-        }
-
-        if (errors.Count > 0)
-        {
-            foreach (var error in errors)
-            {
-                Console.WriteLine($"Error: {error.Message}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Parsing successful!");
-            // 這裡可以進一步處理 AST
-        }
-        */
-
-
         var bbConfig = RedisHelper.GetValue<DBConfig>("mssql-bot-connectionString");// 實際 key 為 `mssql-bot:mssql-bot-connectionString`
         if (bbConfig.connectionString == string.Empty)
         {
-            Console.WriteLine($"empty connectionString", Color.Red);
+            AnsiConsole.MarkupLine($"[red]empty connectionString[/]");
             return;
         }
 
         string queryStoredProcedures =
             @"
             SELECT 
-                ROUTINE_NAME, 
-                ROUTINE_DEFINITION 
-            FROM 
-                INFORMATION_SCHEMA.ROUTINES 
-            WHERE 
-                ROUTINE_TYPE = 'PROCEDURE';
+            p.name AS ROUTINE_NAME, 
+            m.definition AS ROUTINE_DEFINITION 
+        FROM 
+            sys.procedures AS p
+        JOIN 
+            sys.sql_modules AS m ON p.object_id = m.object_id;
         ";
 
-        string queryFunction =
-            @"
-            SELECT 
-                ROUTINE_NAME, 
-                ROUTINE_DEFINITION 
-            FROM 
-                INFORMATION_SCHEMA.ROUTINES 
-            WHERE 
-                ROUTINE_TYPE = 'FUNCTION';
-        ";
-
-        using (SqlConnection connection = new SqlConnection(bbConfig.connectionString))
+        using (var connection = new SqlConnection(bbConfig.connectionString))
         {
             try
             {
                 connection.Open();
-                Console.WriteLine("Connection opened successfully.", Color.Yellow);
+                AnsiConsole.MarkupLine($"[yellow]Connection opened successfully.[/]");
 
                 string pattern = @"@Output_ErrorCode\s*=\s*-\d+";
 
                 // 在這裡執行資料庫操作
 
-                JObject notebookStoredProcedures = ExecQuery(queryStoredProcedures, connection, pattern);
-
-                JObject notebookFunction = ExecQuery(queryFunction, connection, pattern);
+                var notebookStoredProcedures = ExecQuery(queryStoredProcedures, connection, pattern);
 
 
                 var destinationFolder = @$"{Environment.CurrentDirectory}\";
 
                 // 將 notebookStoredProcedures 儲存為 .ipynb 檔案
                 File.WriteAllText($"{destinationFolder}stored_procedures.ipynb", notebookStoredProcedures.ToString(), new System.Text.UTF8Encoding(true));
-                File.WriteAllText($"{destinationFolder}function.ipynb", notebookFunction.ToString(), new System.Text.UTF8Encoding(true));
 
-                Console.WriteLine("Notebook has been created successfully.", Color.Yellow);
+                AnsiConsole.MarkupLine($"[yellow]Notebook has been created successfully.[/]");
             }
-            catch (Exception ex)
+             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}", Color.Red);
+                AnsiConsole.MarkupLine($"[red]An error occurred: {ex.Message}[/]");
             }
         }
     }
@@ -116,7 +70,7 @@ class Program
     {
         var command = new SqlCommand(query, connection);
 
-        Console.WriteLine(query, Color.Green);
+        AnsiConsole.MarkupLine($"[green]{query}[/]");
 
         var reader = command.ExecuteReader();
 
@@ -128,27 +82,115 @@ class Program
             new JProperty("nbformat_minor", 5)
         );
 
-        JArray cells = notebook["cells"] as JArray ?? new JArray();
+        var cells = notebook["cells"] as JArray ?? new JArray();
 
         while (reader.Read())
         {
             var procedureName = reader["ROUTINE_NAME"].ToString();
             var procedureCode = reader["ROUTINE_DEFINITION"].ToString();
-
-            // 检查 procedureCode 是否为 null
-            if (procedureCode != null)
+            
+            if (procedureCode != null && procedureName != null)
             {
-                MatchCollection matches = Regex.Matches(procedureCode, pattern);
+                // 將 [ 與 ] 替換為中文全形括號，避免 Spectre.Console 解析錯誤
+                procedureCode = procedureCode.Replace("[", "【");
+                procedureCode = procedureCode.Replace("]", "】");
 
-                foreach (Match match in matches)
+                MatchCollection matches = Regex.Matches(procedureCode, pattern);
+                if (matches.Count > 0)
                 {
-                    Console.WriteLine($"procedureName: {procedureName} => \r\n{match.Value}\r\n", Color.Yellow);
+                    foreach (Match match in matches)
+                    {
+                        AnsiConsole.MarkupLine($"[red]procedureName: {procedureName} => {match.Value}[/]");
+                    }
+
+                    // 列出 SQL 語法寫到 Redis
+                    RedisHelper.SetValue(procedureName, procedureCode);
+
+                    var parser = new TSql130Parser(false);
+                    TSqlFragment fragment;
+                    IList<ParseError> errors;
+
+                    using (TextReader parseReader = new StringReader(procedureCode))
+                    {
+                        fragment = parser.Parse(parseReader, out errors);
+                    }
+
+                    if (errors.Count > 0)
+                    {
+                        foreach (var error in errors)
+                        {
+                            AnsiConsole.MarkupLine($"[red]Error: {error.Message}[/]");
+
+                            // 列出 SQL 語法寫到 Redis
+                            RedisHelper.SetValue(procedureName, procedureCode);
+                        }
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine($"[blue]procedureName: {procedureName} => Parsing successful![/]");
+
+                        // 遍歷語法樹，查找輸入參數和輸出參數
+                        var customVisitor = new CustomTSqlFragmentVisitor();
+                        fragment.Accept(customVisitor);
+                        // 列出輸入參數
+                        AnsiConsole.MarkupLine($"[yellow]Input Parameters(列出輸入參數):[/]");
+                        if (customVisitor.InputParams.Count > 0)
+                        {
+                            foreach (var param in customVisitor.InputParams)
+                            {
+                                AnsiConsole.MarkupLine($"[green]{param}[/]");
+                            }
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine($"[green]無輸入參數[/]");
+                        }
+
+
+                        // 列出輸出參數及其賦值情況
+                        AnsiConsole.MarkupLine($"[yellow]Output Parameters and their assignments(列出輸出參數及其賦值情況):[/]");
+                        if (customVisitor.OutputParams.Count > 0)
+                        {
+                            foreach (var param in customVisitor.OutputParams)
+                            {
+                                if (customVisitor.Assignments.ContainsKey(param))
+                                {
+                                    AnsiConsole.MarkupLine($"[green]{param} = {customVisitor.Assignments[param]}[/]");
+                                }
+                                else
+                                {
+                                    AnsiConsole.MarkupLine($"[green]{param} is not assigned.[/]");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine($"[green]無輸出參數[/]");
+                        }
+
+                        // 列出返回值
+                        AnsiConsole.MarkupLine($"[yellow]Return Values(列出返回值):[/]");
+                        if (customVisitor.ReturnValues.Count > 0)
+                        {
+                            foreach (var returnValue in customVisitor.ReturnValues)
+                            {
+                                AnsiConsole.MarkupLine($"[green]{returnValue}[/]");
+                            }
+                        }
+                        else
+                        {
+                            AnsiConsole.MarkupLine($"[green]無返回值[/]");
+                        }
+                    }
+
+
                 }
+
+
             }
             else
             {
-                // 处理 procedureCode 为 null 的情况
-                Console.WriteLine($"Procedure code for procedureName({procedureName}) is null.", Color.Red);
+                AnsiConsole.MarkupLine($"[red]Procedure code for procedureName({procedureName}) is null.[/]");
             }
 
             var cell = new JObject(
