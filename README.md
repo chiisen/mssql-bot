@@ -7,6 +7,7 @@ MS-SQL 語法檢查機器人
 
 # 使用 SQL 語法
 目前使用語法如下:  
+- 列出所有 SP  
 ```sql
 SELECT 
     ROUTINE_NAME, 
@@ -17,6 +18,7 @@ WHERE
     ROUTINE_TYPE = 'PROCEDURE';
 ```
 與
+- 列出所有函式  
 ```sql
 SELECT 
     ROUTINE_NAME, 
