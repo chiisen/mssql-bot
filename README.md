@@ -2,8 +2,8 @@
 MS-SQL 語法檢查機器人  
 
 # 使用情境
-最近在使用 DBA 提供的存儲過程（SP）進行資料串接時，經常發生 SP 執行時的例外情況。  
-為了解決這個問題，我寫了一個簡單的機器人，用於對 SP 或函數進行簡單的除錯，從而避免在應用程序操作 SP 或函數時發生例外。  
+最近在使用 DBA 提供的儲存程序（SP）進行調用時，發生 SP 執行時的例外情況。  
+為了解決這個問題，我寫了一個簡單的機器人，用於對 SP 或函數進行簡單的除錯，從而避免在應用程序呼叫 SP 或函數時發生例外。  
 
 # 使用 SQL 語法
 目前使用語法如下:  
@@ -38,6 +38,7 @@ WHERE
 內容如下:  
 ```json
 {
-    "connectionString": "Data Source=daydb-svc.h1-db-dev;Initial Catalog=【資料庫名稱】;User ID=【帳號】;Password=【密碼】;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False;Pooling=true;Min Pool Size=10;Max Pool Size=150;"
+    "connectionString": "Data Source=【連線網址】;Initial Catalog=【資料庫名稱】;User ID=【帳號】;Password=【密碼】;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False;Pooling=true;Min Pool Size=10;Max Pool Size=150;"
 }
 ```
+![執行畫面](./images/MSSQL-BOT.png)
