@@ -4,10 +4,13 @@ MS-SQL 語法檢查機器人
 # 使用情境
 最近在使用 DBA 提供的儲存程序（SP）進行調用時，發生 SP 執行時的例外情況。  
 為了解決這個問題，我寫了一個簡單的機器人，用於對 SP 進行簡單的除錯，從而避免在應用程序呼叫 SP 時發生例外。  
+目前情境是 DBA 新增 output 參數 @Output_ErrorCode 型別為 tinyint 卻給負值，  
+導致 SP 運行發生例外，事後反應溝通後，卻無法保證是否所有 SP 有類似狀況的問題，  
+於是基於自救的需求，誕生次款機器人工具，後續有類似情境也可修改擴充使用。  
 
 # 使用 SQL 語法
 目前使用語法如下:  
-- 列出所有 SP  
+- 列出所有 SP 的 SQL 腳本  
 ```sql
     SELECT 
     p.name AS ROUTINE_NAME, 
@@ -31,6 +34,12 @@ JOIN
     "connectionString": "Data Source=【連線網址】;Initial Catalog=【資料庫名稱】;User ID=【帳號】;Password=【密碼】;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False;Pooling=true;Min Pool Size=10;Max Pool Size=150;"
 }
 ```
+- 命令模式執行下面指令:
+```
+mssql-bot checksp
+```
+依據情境先給命令為 checksp，需要時可再新增命令
+
 ![執行畫面](./images/MSSQL-BOT.png)
 執行後會把 `@Output_ErrorCode` 被付值為負值的地方列印在畫面上  
 例如上圖畫面上的藍色字體，如下:
@@ -47,5 +56,6 @@ procedureName: CodeCreator_Recommend_Code =>
 ```
 var pattern = @"@Output_ErrorCode\s*=\s*-\d+";
 ```
-上面語法為查詢 `@Output_ErrorCode =` 為負值的部分  
-可以依據需求調整查詢語法
+上面語法為正規表達式查詢 `@Output_ErrorCode =` 為負值的部分  
+可以依據需求調整上述查詢語法
+
