@@ -40,7 +40,8 @@ public partial class Program
         FROM 
             sys.procedures AS p
         JOIN 
-            sys.sql_modules AS m ON p.object_id = m.object_id;
+            sys.sql_modules AS m ON p.object_id = m.object_id
+            ORDER BY ROUTINE_NAME ASC;
         ";
 
                     using (var connection = new SqlConnection(bbConfig.connectionString))
