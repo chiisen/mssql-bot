@@ -1,10 +1,11 @@
-﻿using mssql_bot;
+﻿using System.Data.SqlClient;
+using System.Text;
+using System.Text.Json;
+using System.Timers;
+using mssql_bot;
 using mssql_bot.helper;
 using mssql_bot.Helper;
 using Spectre.Console;
-using System.Data.SqlClient;
-using System.Text;
-using System.Timers;
 
 public partial class Program
 {
@@ -77,12 +78,16 @@ public partial class Program
                 connection.Open();
                 AnsiConsole.MarkupLine($"[yellow]Connection opened successfully.[/]");
 
+                var directory = RedisHelper.GetValue(RedisHelper.TARGET_SP_BACKUP); // 專案指定的 key
+                var path = $"{directory}stored_procedures.json";
+
+                var comparer = new SPComparer();
+                var old = comparer.ReadJsonFile(path);
+
                 // 在這裡執行資料庫操作
                 var spList = ExecQuery(queryStoredProcedures, connection);
 
                 // 將 spList 儲存為 .json 檔案
-                var directory = RedisHelper.GetValue(RedisHelper.TARGET_SP_BACKUP); // 專案指定的 key
-                var path = $"{directory}stored_procedures.json";
                 SaveListAsJson(spList, path);
 
                 AnsiConsole.MarkupLine($"[yellow]File has been created successfully.[/]");
@@ -94,8 +99,19 @@ public partial class Program
                     AnsiConsole.MarkupLine($"[red]There are differences in the commit.[/]");
                     GitHelper.AddAndCommit("BOT 差異 Commit", directory);
 
+                    var differences = "";
+                    if (old != null) // 检查是否为 null
+                    {
+                        comparer
+                            .CompareRoutineNames(old, spList)
+                            .ForEach(sp =>
+                            {
+                                differences += $"{sp} 、 ";
+                            });
+                    }
+
                     // 發送 Discord 通知
-                    SendDiscordNotification("There are differences in the commit.");
+                    SendDiscordNotification($"There are differences in the commit.({differences})");
                 }
                 else
                 {
@@ -113,7 +129,11 @@ public partial class Program
     {
         using (var client = new HttpClient())
         {
-            var content = new StringContent($"{{\"content\": \"{message}\"}}", Encoding.UTF8, "application/json");
+            var content = new StringContent(
+                $"{{\"content\": \"{message}\"}}",
+                Encoding.UTF8,
+                "application/json"
+            );
             await client.PostAsync(discordWebhookUrl, content);
         }
     }
