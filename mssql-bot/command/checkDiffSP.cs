@@ -1,11 +1,10 @@
-﻿using System.Data.SqlClient;
-using System.IO;
-using System.Text;
-using System.Timers;
-using mssql_bot;
+﻿using mssql_bot;
 using mssql_bot.helper;
 using mssql_bot.Helper;
 using Spectre.Console;
+using System.Data.SqlClient;
+using System.Text;
+using System.Timers;
 
 public partial class Program
 {
