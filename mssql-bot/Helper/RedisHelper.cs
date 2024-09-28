@@ -5,8 +5,24 @@ using StackExchange.Redis;
 
 namespace mssql_bot.helper
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class RedisHelper
     {
+        /// <summary>
+        /// DB 連線字串
+        /// </summary>
+        public static string TARGET_CONNECTION_STRING = "mssql-bot-connectionString"; // 實際 key 為 `mssql-bot:mssql-bot-connectionString`
+        /// <summary>
+        /// 本地備份目錄
+        /// </summary>
+        public static string TARGET_SP_BACKUP = "mssql-bot-backup"; // 實際 key 為 `mssql-bot:mssql-bot-backup`
+        /// <summary>
+        /// Discord Webhook URL
+        /// </summary>
+        public static string DISCORD = "mssql-bot-discord";
+
         protected static IDatabase? Redis { get; set; }
         protected static IDatabase? OtherRedis { get; set; }
         public static bool IsInitialized { get; private set; }
@@ -40,7 +56,7 @@ namespace mssql_bot.helper
         }
 
         /// <summary>
-        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: csharp.cli:add-customer
+        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="cacheKey"></param>
@@ -64,7 +80,31 @@ namespace mssql_bot.helper
         }
 
         /// <summary>
-        /// 用 key 設定 value，目前 Redis 的 Key 值會加上專案的名稱，例如: csharp.cli:add-customer
+        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKey"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static string GetValue(string cacheKey, int db = 0)
+        {
+            LazyInitializer(db);
+
+            var assemblyName = GetProjectName();
+
+            var data = Redis!.StringGet($"{assemblyName}:{cacheKey}");
+            if (data == RedisValue.EmptyString)
+            {
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
+                return default!;
+            }
+
+            var info = data.HasValue ? data.ToString() : string.Empty;
+            return info!;
+        }
+
+        /// <summary>
+        /// 用 key 設定 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="cacheKey"></param>
@@ -89,7 +129,7 @@ namespace mssql_bot.helper
         }
 
         /// <summary>
-        /// 刪除本地 Redis 的 Key，目前 Redis 的 Key 值會加上專案的名稱，例如: csharp.cli:add-customer
+        /// 刪除本地 Redis 的 Key，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
         /// </summary>
         /// <param name="connectionString">Redis連線字串</param>
         /// <param name="cacheKey"></param>

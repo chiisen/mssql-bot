@@ -1,11 +1,5 @@
-﻿using System.Data.SqlClient;
-using System.Reflection;
-using System.Text.RegularExpressions;
+﻿using System.Reflection;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.SqlServer.TransactSql.ScriptDom;
-using mssql_bot;
-using mssql_bot.helper;
-using Newtonsoft.Json.Linq;
 using Spectre.Console;
 
 partial class Program
@@ -61,6 +55,8 @@ partial class Program
         Example();
 
         CheckSP();
+
+        CheckDiffSP();
         #endregion 【註冊 Command】
 
 

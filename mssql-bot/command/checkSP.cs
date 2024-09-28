@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
 using mssql_bot;
 using mssql_bot.helper;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using Spectre.Console;
 
 public partial class Program
@@ -25,24 +25,16 @@ public partial class Program
 
                 command.OnExecute(() =>
                 {
-                    var bbConfig = RedisHelper.GetValue<DBConfig>("mssql-bot-connectionString"); // 實際 key 為 `mssql-bot:mssql-bot-connectionString`
+                    var bbConfig = RedisHelper.GetValue<DBConfig>(
+                        RedisHelper.TARGET_CONNECTION_STRING
+                    ); // 專案指定的 key
                     if (bbConfig.connectionString == string.Empty)
                     {
                         AnsiConsole.MarkupLine($"[red]empty connectionString[/]");
                         return 0;
                     }
 
-                    string queryStoredProcedures =
-                        @"
-            SELECT 
-            p.name AS ROUTINE_NAME, 
-            m.definition AS ROUTINE_DEFINITION 
-        FROM 
-            sys.procedures AS p
-        JOIN 
-            sys.sql_modules AS m ON p.object_id = m.object_id
-            ORDER BY ROUTINE_NAME ASC;
-        ";
+                    string queryStoredProcedures = DbHelper.QUERY_STOREDPROCEDURES;
 
                     using (var connection = new SqlConnection(bbConfig.connectionString))
                     {
@@ -51,28 +43,12 @@ public partial class Program
                             connection.Open();
                             AnsiConsole.MarkupLine($"[yellow]Connection opened successfully.[/]");
 
-                            var pattern = @"@Output_ErrorCode\s*=\s*-\d+";
-
                             // 在這裡執行資料庫操作
 
-                            var notebookStoredProcedures = ExecQuery(
-                                queryStoredProcedures,
-                                connection,
-                                pattern
-                            );
+                            var spList = ExecQuery(queryStoredProcedures, connection);
 
-                            var destinationFolder = @$"{Environment.CurrentDirectory}\";
-
-                            // 將 notebookStoredProcedures 儲存為 .ipynb 檔案
-                            File.WriteAllText(
-                                $"{destinationFolder}stored_procedures.ipynb",
-                                notebookStoredProcedures.ToString(),
-                                new System.Text.UTF8Encoding(true)
-                            );
-
-                            AnsiConsole.MarkupLine(
-                                $"[yellow]Notebook has been created successfully.[/]"
-                            );
+                            var pattern = @"@Output_ErrorCode\s*=\s*-\d+";
+                            Matches(spList, pattern);
                         }
                         catch (Exception ex)
                         {
@@ -87,33 +63,34 @@ public partial class Program
     }
 
     /// <summary>
-    /// 執行 SQL 查詢，並將結果轉換為 Jupyter Notebook 的 JSON 結構
+    /// 存成 Json 檔案
     /// </summary>
-    /// <param name="query"></param>
-    /// <param name="connection"></param>
-    /// <returns></returns>
-    private static JObject ExecQuery(string query, SqlConnection connection, string pattern = "")
+    /// <param name="list"></param>
+    /// <param name="filePath"></param>
+    private static void SaveListAsJson(List<SPData> list, string filePath)
     {
-        var command = new SqlCommand(query, connection);
+        AnsiConsole.MarkupLine($"[yellow]【存成 Json 檔案】[/]");
 
-        AnsiConsole.MarkupLine($"[green]{query}[/]");
+        // 將 list 轉換成 JSON 字串
+        string json = JsonConvert.SerializeObject(list, Formatting.Indented);
 
-        var reader = command.ExecuteReader();
+        // 將 JSON 字串寫入檔案
+        File.WriteAllText(filePath, json, new System.Text.UTF8Encoding(true));
+    }
 
-        // 建立 Jupyter Notebook 的 JSON 結構
-        var notebook = new JObject(
-            new JProperty("cells", new JArray()),
-            new JProperty("metadata", new JObject()),
-            new JProperty("nbformat", 4),
-            new JProperty("nbformat_minor", 5)
-        );
+    /// <summary>
+    /// 比對 SP 內容特徵
+    /// </summary>
+    /// <param name="list"></param>
+    /// <param name="pattern"></param>
+    private static void Matches(List<SPData> list, string pattern = "")
+    {
+        AnsiConsole.MarkupLine($"[yellow]【比對 SP 內容特徵】[/]");
 
-        var cells = notebook["cells"] as JArray ?? new JArray();
-
-        while (reader.Read())
+        list.ForEach(sp =>
         {
-            var procedureName = reader["ROUTINE_NAME"].ToString();
-            var procedureCode = reader["ROUTINE_DEFINITION"].ToString();
+            var procedureName = sp.ROUTINE_NAME;
+            var procedureCode = sp.ROUTINE_DEFINITION;
 
             if (procedureCode != null && procedureName != null)
             {
@@ -223,19 +200,46 @@ public partial class Program
                     $"[red]Procedure code for procedureName({procedureName}) is null.[/]"
                 );
             }
+        });
+    }
 
-            var cell = new JObject(
-                new JProperty("cell_type", "code"),
-                new JProperty("metadata", new JObject(new JProperty("language", "sql"))),
-                new JProperty("source", new JArray($"-- {procedureName}\n{procedureCode}")),
-                new JProperty("outputs", new JArray()),
-                new JProperty("execution_count", (JArray?)null)
-            );
+    /// <summary>
+    /// 執行 SQL 查詢，並將結果回傳
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="connection"></param>
+    /// <returns></returns>
+    private static List<SPData> ExecQuery(string query, SqlConnection connection)
+    {
+        var command = new SqlCommand(query, connection);
 
-            cells.Add(cell);
+        AnsiConsole.MarkupLine($"[yellow]【執行 SQL 查詢，並將結果回傳】[/]");
+
+        AnsiConsole.MarkupLine($"[green]{query}[/]");
+
+        var reader = command.ExecuteReader();
+
+        var list = new List<SPData>();
+        while (reader.Read())
+        {
+            var procedureName = reader["ROUTINE_NAME"].ToString();
+            var procedureCode = reader["ROUTINE_DEFINITION"].ToString();
+
+            if (procedureCode != null && procedureName != null)
+            {
+                list.Add(
+                    new SPData { ROUTINE_NAME = procedureName, ROUTINE_DEFINITION = procedureCode }
+                );
+            }
+            else
+            {
+                AnsiConsole.MarkupLine(
+                    $"[red]Procedure code for procedureName({procedureName}) is null.[/]"
+                );
+            }
         }
 
         reader.Close();
-        return notebook;
+        return list;
     }
 }
