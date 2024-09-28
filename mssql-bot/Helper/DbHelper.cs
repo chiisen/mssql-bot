@@ -18,6 +18,20 @@ namespace mssql_bot.helper
             sys.sql_modules AS m ON p.object_id = m.object_id
             ORDER BY ROUTINE_NAME ASC;
         ";
+
+        public static string QUERY_FUNCTIONS =
+            @"
+            SELECT 
+            f.name AS ROUTINE_NAME, 
+            m.definition AS ROUTINE_DEFINITION 
+        FROM 
+            sys.objects AS f
+        JOIN 
+            sys.sql_modules AS m ON f.object_id = m.object_id
+        WHERE 
+            f.type IN ('FN', 'IF', 'TF')
+            ORDER BY ROUTINE_NAME ASC;
+        ";
     }
 
     /// <summary>
@@ -37,10 +51,7 @@ namespace mssql_bot.helper
             return JsonSerializer.Deserialize<List<SPData>>(jsonString);
         }
 
-        public List<string> CompareRoutineNames(
-            List<SPData> previousList,
-            List<SPData> currentList
-        )
+        public List<string> CompareRoutineNames(List<SPData> previousList, List<SPData> currentList)
         {
             var previousDefinitions = previousList
                 .Where(sp => sp.ROUTINE_NAME != null)

@@ -1,6 +1,6 @@
 ﻿using System.Data.SqlClient;
+using System.IO;
 using System.Text;
-using System.Text.Json;
 using System.Timers;
 using mssql_bot;
 using mssql_bot.helper;
@@ -70,6 +70,7 @@ public partial class Program
         }
 
         string queryStoredProcedures = DbHelper.QUERY_STOREDPROCEDURES;
+        string queryFunctions = DbHelper.QUERY_FUNCTIONS;
 
         using (var connection = new SqlConnection(bbConfig.connectionString))
         {
@@ -79,19 +80,34 @@ public partial class Program
                 AnsiConsole.MarkupLine($"[yellow]Connection opened successfully.[/]");
 
                 var directory = RedisHelper.GetValue(RedisHelper.TARGET_SP_BACKUP); // 專案指定的 key
-                var path = $"{directory}stored_procedures.json";
+                var spPath = $"{directory}stored_procedures.json";
+                var funcPath = $"{directory}functions.json";
 
                 var comparer = new SPComparer();
-                var old = comparer.ReadJsonFile(path);
+                List<SPData>? oldSP = null;
+                List<SPData>? oldFunc = null;
+                // 檢查 funcPath 檔案是否存在
+                if (File.Exists(spPath))
+                {
+                    oldSP = comparer.ReadJsonFile(spPath);
+                }
+                // 檢查 funcPath 檔案是否存在
+                if (File.Exists(funcPath))
+                {
+                    oldFunc = comparer.ReadJsonFile(funcPath);
+                }
 
                 // 在這裡執行資料庫操作
                 var spList = ExecQuery(queryStoredProcedures, connection);
+                var funcList = ExecQuery(queryFunctions, connection);
 
-                // 將 spList 儲存為 .json 檔案
-                SaveListAsJson(spList, path);
+                // 將 spList 和 funcList 儲存為 .json 檔案
+                SaveListAsJson(spList, spPath);
+                SaveListAsJson(funcList, funcPath);
 
-                AnsiConsole.MarkupLine($"[yellow]File has been created successfully.[/]");
-                AnsiConsole.MarkupLine($"[blue]{path}[/]");
+                AnsiConsole.MarkupLine($"[yellow]Files have been created successfully.[/]");
+                AnsiConsole.MarkupLine($"[blue]{spPath}[/]");
+                AnsiConsole.MarkupLine($"[blue]{funcPath}[/]");
 
                 // 檢查是否有差異
                 if (GitHelper.HasDifferences(directory))
@@ -100,14 +116,31 @@ public partial class Program
                     GitHelper.AddAndCommit("BOT 差異 Commit", directory);
 
                     var differences = "";
-                    if (old != null) // 检查是否为 null
+                    if (oldSP != null) // 檢查是否為 null
                     {
                         comparer
-                            .CompareRoutineNames(old, spList)
+                            .CompareRoutineNames(oldSP, spList)
                             .ForEach(sp =>
                             {
-                                differences += $"{sp} 、 ";
+                                differences += $"SP: {sp} 、 ";
                             });
+                    }
+                    else
+                    {
+                        differences += $"SP: 【第一次建立】 、 ";
+                    }
+                    if (oldFunc != null) // 檢查是否為 null
+                    {
+                        comparer
+                            .CompareRoutineNames(oldFunc, funcList)
+                            .ForEach(func =>
+                            {
+                                differences += $"FN: {func} 、 ";
+                            });
+                    }
+                    else
+                    {
+                        differences += $"FN: 【第一次建立】 、 ";
                     }
 
                     // 發送 Discord 通知
