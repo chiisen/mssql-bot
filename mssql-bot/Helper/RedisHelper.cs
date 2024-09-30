@@ -21,7 +21,7 @@ namespace mssql_bot.helper
         /// <summary>
         /// Discord Webhook URL
         /// </summary>
-        public static string DISCORD = "mssql-bot-discord";
+        public static string DISCORD = "mssql-bot-discord";// 實際 key 為 `mssql-bot:mssql-bot-discord`
 
         protected static IDatabase? Redis { get; set; }
         protected static IDatabase? OtherRedis { get; set; }
