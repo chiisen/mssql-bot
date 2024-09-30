@@ -5,6 +5,7 @@ using mssql_bot;
 using mssql_bot.helper;
 using Newtonsoft.Json;
 using Spectre.Console;
+using static mssql_bot.helper.RedisHelper;
 
 public partial class Program
 {
@@ -23,11 +24,13 @@ public partial class Program
                     "檢查 SP - 目前 case 是 @Output_ErrorCode 型別為 tinyint，卻給負值";
                 command.HelpOption("-?|-h|-help");
 
+                // 輸入參數說明
+                var wordsArgument = command.Argument("[words]", "指定需要輸出的文字。");
+
                 command.OnExecute(() =>
                 {
-                    var bbConfig = RedisHelper.GetValue<DBConfig>(
-                        RedisHelper.TARGET_CONNECTION_STRING
-                    ); // 專案指定的 key
+                    var words = wordsArgument.HasValue ? $"_{wordsArgument.Value}" : string.Empty;
+                     var bbConfig = RedisHelper.GetValue<DBConfig>(RedisKeys.ConnectionString, words); // 專案指定的 key
                     if (bbConfig.connectionString == string.Empty)
                     {
                         AnsiConsole.MarkupLine($"[red]empty connectionString[/]");
@@ -67,7 +70,7 @@ public partial class Program
     /// </summary>
     /// <param name="list"></param>
     /// <param name="filePath"></param>
-    private static void SaveListAsJson(List<SPData> list, string filePath)
+    public static void SaveListAsJson(List<SPData> list, string filePath)
     {
         AnsiConsole.MarkupLine($"[yellow]【存成 Json 檔案】[/]");
 
@@ -209,7 +212,7 @@ public partial class Program
     /// <param name="query"></param>
     /// <param name="connection"></param>
     /// <returns></returns>
-    private static List<SPData> ExecQuery(string query, SqlConnection connection)
+    public static List<SPData> ExecQuery(string query, SqlConnection connection)
     {
         var command = new SqlCommand(query, connection);
 

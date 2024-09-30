@@ -2,26 +2,42 @@
 using Newtonsoft.Json;
 using Spectre.Console;
 using StackExchange.Redis;
+using static mssql_bot.helper.RedisHelper;
 
 namespace mssql_bot.helper
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public class RedisHelper
     {
-        /// <summary>
-        /// DB 連線字串
-        /// </summary>
-        public static string TARGET_CONNECTION_STRING = "mssql-bot-connectionString"; // 實際 key 為 `mssql-bot:mssql-bot-connectionString`
-        /// <summary>
-        /// 本地備份目錄
-        /// </summary>
-        public static string TARGET_SP_BACKUP = "mssql-bot-backup"; // 實際 key 為 `mssql-bot:mssql-bot-backup`
-        /// <summary>
-        /// Discord Webhook URL
-        /// </summary>
-        public static string DISCORD = "mssql-bot-discord";// 實際 key 為 `mssql-bot:mssql-bot-discord`
+        public enum RedisKeys
+        {
+            /// <summary>
+            /// DB 連線字串，實際 key 為 `mssql-bot:mssql-bot-connectionString`
+            /// </summary>
+            ConnectionString,
+
+            /// <summary>
+            /// 本地備份目錄，實際 key 為 `mssql-bot:mssql-bot-backup`
+            /// </summary>
+            Backup,
+
+            /// <summary>
+            /// Discord Webhook URL，實際 key 為 `mssql-bot:mssql-bot-discord`
+            /// </summary>
+            Discord,
+        }
+
+        public static Dictionary<RedisKeys, string> RedisKeyDictionary = new Dictionary<
+            RedisKeys,
+            string
+        >
+        {
+            { RedisKeys.ConnectionString, "mssql-bot-connectionString" },
+            { RedisKeys.Backup, "mssql-bot-backup" },
+            { RedisKeys.Discord, "mssql-bot-discord" },
+        };
 
         protected static IDatabase? Redis { get; set; }
         protected static IDatabase? OtherRedis { get; set; }
@@ -62,8 +78,12 @@ namespace mssql_bot.helper
         /// <param name="cacheKey"></param>
         /// <param name="db"></param>
         /// <returns></returns>
-        public static T GetValue<T>(string cacheKey, int db = 0)
+        public static T GetValue<T>(string? cacheKey, int db = 0)
         {
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
             LazyInitializer(db);
 
             var assemblyName = GetProjectName();
@@ -86,13 +106,124 @@ namespace mssql_bot.helper
         /// <param name="cacheKey"></param>
         /// <param name="db"></param>
         /// <returns></returns>
-        public static string GetValue(string cacheKey, int db = 0)
+        public static T GetValue<T>(RedisKeys enumKey, int db = 0)
         {
             LazyInitializer(db);
 
             var assemblyName = GetProjectName();
 
+            var key = RedisKeyDictionary[enumKey];
+
+            var data = Redis!.StringGet($"{assemblyName}:{key}");
+            if (data == RedisValue.EmptyString)
+            {
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
+                return default!;
+            }
+
+            var info = data.HasValue ? JsonConvert.DeserializeObject<T>(data!) : default;
+            return info!;
+        }
+
+        /// <summary>
+        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKey"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static T GetValue<T>(RedisKeys enumKey, string words, int db = 0)
+        {
+            LazyInitializer(db);
+
+            var assemblyName = GetProjectName();
+
+            var key = RedisKeyDictionary[enumKey];
+            var newKey = $"{key}{words}";
+
+            var data = Redis!.StringGet($"{assemblyName}:{newKey}");
+            if (data == RedisValue.EmptyString)
+            {
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
+                return default!;
+            }
+
+            var info = data.HasValue ? JsonConvert.DeserializeObject<T>(data!) : default;
+            return info!;
+        }
+
+        /// <summary>
+        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKey"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static string GetValue(string? cacheKey, int db = 0)
+        {
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
+
+            LazyInitializer(db);
+
+            var assemblyName = GetProjectName();
+
             var data = Redis!.StringGet($"{assemblyName}:{cacheKey}");
+            if (data == RedisValue.EmptyString)
+            {
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
+                return default!;
+            }
+
+            var info = data.HasValue ? data.ToString() : string.Empty;
+            return info!;
+        }
+
+        /// <summary>
+        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumKey"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static string GetValue(RedisKeys enumKey, int db = 0)
+        {
+            LazyInitializer(db);
+
+            var assemblyName = GetProjectName();
+
+            var key = RedisKeyDictionary[enumKey];
+
+            var data = Redis!.StringGet($"{assemblyName}:{key}");
+            if (data == RedisValue.EmptyString)
+            {
+                AnsiConsole.MarkupLine($"[red]empty data[/]");
+                return default!;
+            }
+
+            var info = data.HasValue ? data.ToString() : string.Empty;
+            return info!;
+        }
+
+        /// <summary>
+        /// 用 key 取得 value，目前 Redis 的 Key 值會加上專案的名稱，例如: mssql-bot:add-customer
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumKey"></param>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static string GetValue(RedisKeys enumKey, string words, int db = 0)
+        {
+            LazyInitializer(db);
+
+            var assemblyName = GetProjectName();
+
+            var key = RedisKeyDictionary[enumKey];
+            var newKey = $"{key}{words}";
+
+            var data = Redis!.StringGet($"{assemblyName}:{newKey}");
             if (data == RedisValue.EmptyString)
             {
                 AnsiConsole.MarkupLine($"[red]empty data[/]");
@@ -110,8 +241,13 @@ namespace mssql_bot.helper
         /// <param name="cacheKey"></param>
         /// <param name="value"></param>
         /// <param name="db"></param>
-        public static void SetValue<T>(string cacheKey, T value, int db = 0)
+        public static void SetValue<T>(string? cacheKey, T value, int db = 0)
         {
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
+
             LazyInitializer(db);
 
             var assemblyName = GetProjectName();
@@ -134,8 +270,13 @@ namespace mssql_bot.helper
         /// <param name="connectionString">Redis連線字串</param>
         /// <param name="cacheKey"></param>
         /// <param name="db"></param>
-        public static void KeyDelete(string cacheKey, int db = 0)
+        public static void KeyDelete(string? cacheKey, int db = 0)
         {
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
+
             var assemblyName = GetProjectName();
 
             var key = $"{assemblyName}:{cacheKey}";
@@ -149,8 +290,18 @@ namespace mssql_bot.helper
         /// <param name="connectionString">Redis連線字串</param>
         /// <param name="cacheKey"></param>
         /// <param name="db"></param>
-        public static void OtherKeyDelete(string connectionString, string cacheKey, int db = 0)
+        public static void OtherKeyDelete(string? connectionString, string? cacheKey, int db = 0)
         {
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
+
             var options = ConfigurationOptions.Parse(connectionString);
             options.AllowAdmin = true;
             options.ReconnectRetryPolicy = new ExponentialRetry(3000);
@@ -167,8 +318,18 @@ namespace mssql_bot.helper
         /// <param name="cacheKey"></param>
         /// <param name="db"></param>
         /// <returns></returns>
-        public static T GetOtherValue<T>(string connectionString, string cacheKey, int db = 0)
+        public static T GetOtherValue<T>(string? connectionString, string? cacheKey, int db = 0)
         {
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
+
             var options = ConfigurationOptions.Parse(connectionString);
             options.AllowAdmin = true;
             options.ReconnectRetryPolicy = new ExponentialRetry(3000);
@@ -195,12 +356,22 @@ namespace mssql_bot.helper
         /// <param name="value"></param>
         /// <param name="db"></param>
         public static void SetOtherValue<T>(
-            string connectionString,
-            string cacheKey,
+            string? connectionString,
+            string? cacheKey,
             T value,
             int db = 0
         )
         {
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+
+            if (cacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(cacheKey));
+            }
+
             var options = ConfigurationOptions.Parse(connectionString);
             options.AllowAdmin = true;
             options.ReconnectRetryPolicy = new ExponentialRetry(3000);
