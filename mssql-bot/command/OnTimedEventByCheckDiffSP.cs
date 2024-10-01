@@ -1,10 +1,9 @@
-﻿using System.Data.SqlClient;
-using System.Text;
-using System.Threading;
-using System.Timers;
-using mssql_bot.helper;
+﻿using mssql_bot.helper;
 using mssql_bot.Helper;
 using Spectre.Console;
+using System.Data.SqlClient;
+using System.Text;
+using System.Timers;
 
 namespace mssql_bot.command
 {
