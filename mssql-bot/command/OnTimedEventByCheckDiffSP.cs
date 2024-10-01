@@ -165,6 +165,10 @@ namespace mssql_bot.command
             }
         }
 
+        /// <summary>
+        /// 發送 Discord 通知
+        /// </summary>
+        /// <param name="message"></param>
         private async void SendDiscordNotification(string message)
         {
             using (var client = new HttpClient())
