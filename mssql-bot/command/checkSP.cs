@@ -233,7 +233,7 @@ public partial class Program
                 if(procedureCode.Length == 0)
                 {
                     // 沒有內容，可能是權限不足，不需要再處理了
-                    throw new Exception("權限不足，無法取得程式碼。");
+                    throw new Exception($"{procedureName} 權限不足，無法取得程式碼。");
                 }
                 list.Add(
                     new SPData { ROUTINE_NAME = procedureName, ROUTINE_DEFINITION = procedureCode }
