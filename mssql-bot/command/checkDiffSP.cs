@@ -30,6 +30,7 @@ public partial class Program
                     var timer = new OnTimedEventByCheckDiffSP
                     {
                         _YOUR_DISCORD_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Discord, words),
+                        _YOUR_TELEGRAM_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Telegram, words),
                         _TARGET_CONNECTION_STRING = RedisHelper.GetValue<DBConfig>(
                             RedisKeys.ConnectionString,
                             words

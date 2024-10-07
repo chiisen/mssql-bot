@@ -14,6 +14,7 @@ namespace mssql_bot.command
     {
         public System.Timers.Timer? _TIMER;
         public string _YOUR_DISCORD_WEBHOOK_URL = "YOUR_DISCORD_WEBHOOK_URL"; // 設定你的 Discord Webhook URL
+        public string _YOUR_TELEGRAM_WEBHOOK_URL = "YOUR_TELEGRAM_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
         public DBConfig _TARGET_CONNECTION_STRING = new DBConfig();
         public string _TARGET_SP_BACKUP = "git 的備份目錄";
         public string _WORLDS = "";
@@ -113,7 +114,7 @@ namespace mssql_bot.command
                     {
                         AnsiConsole.MarkupLine($"[red]There are differences in the commit.[/]");
 
-                        var differences = "";
+                        var differences = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ：\n";// 紀錄現在時間
                         if (oldSP != null) // 檢查是否為 null
                         {
                             comparer
@@ -148,6 +149,11 @@ namespace mssql_bot.command
                         SendDiscordNotification(
                             $"{_WORLDS}: There are differences in the commit.({differences})"
                         );
+
+                        // 發送 TG 通知
+                        SendTelegramNotification(
+                            $"{_WORLDS}: There are differences in the commit.({differences})"
+                        );
                     }
                     else
                     {
@@ -170,6 +176,12 @@ namespace mssql_bot.command
         /// <param name="message"></param>
         private async void SendDiscordNotification(string message)
         {
+            if(string.IsNullOrEmpty(_YOUR_DISCORD_WEBHOOK_URL))
+            {
+                AnsiConsole.MarkupLine($"[yellow]Null _YOUR_DISCORD_WEBHOOK_URL.[/]");
+                return;
+            }
+
             using (var client = new HttpClient())
             {
                 var content = new StringContent(
@@ -178,6 +190,39 @@ namespace mssql_bot.command
                     "application/json"
                 );
                 await client.PostAsync(_YOUR_DISCORD_WEBHOOK_URL, content);
+            }
+        }
+
+        /// <summary>
+        /// 發送 TG 通知
+        /// </summary>
+        /// <param name="message"></param>
+        private async void SendTelegramNotification(string message)
+        {
+            if (string.IsNullOrEmpty(_YOUR_TELEGRAM_WEBHOOK_URL))
+            {
+                AnsiConsole.MarkupLine($"[yellow]Null _YOUR_TELEGRAM_WEBHOOK_URL.[/]");
+                return;
+            }
+
+            using (var client = new HttpClient())
+            {
+                // 將訊息編碼成 URL 格式
+                var encodedMessage = Uri.EscapeDataString(message);
+                var url = $"{_YOUR_TELEGRAM_WEBHOOK_URL}{encodedMessage}";
+
+                // 發送 GET 請求
+                var response = await client.GetAsync(url);
+
+                // 檢查回應狀態碼
+                if (response.IsSuccessStatusCode)
+                {
+                    AnsiConsole.MarkupLine($"[green]Telegram notification sent successfully.[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[red]Failed to send Telegram notification.[/]");
+                }
             }
         }
     }

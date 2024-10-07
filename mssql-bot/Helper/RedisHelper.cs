@@ -1,8 +1,7 @@
-﻿using System.Reflection;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Spectre.Console;
 using StackExchange.Redis;
-using static mssql_bot.helper.RedisHelper;
+using System.Reflection;
 
 namespace mssql_bot.helper
 {
@@ -27,6 +26,11 @@ namespace mssql_bot.helper
             /// Discord Webhook URL，實際 key 為 `mssql-bot:mssql-bot-discord`
             /// </summary>
             Discord,
+
+            /// <summary>
+            /// Telegram Webhook URL，實際 key 為 `mssql-bot:mssql-bot-telegram`
+            /// </summary>
+            Telegram,
         }
 
         public static Dictionary<RedisKeys, string> RedisKeyDictionary = new Dictionary<
@@ -37,6 +41,7 @@ namespace mssql_bot.helper
             { RedisKeys.ConnectionString, "mssql-bot-connectionString" },
             { RedisKeys.Backup, "mssql-bot-backup" },
             { RedisKeys.Discord, "mssql-bot-discord" },
+            { RedisKeys.Telegram, "mssql-bot-telegram" },
         };
 
         protected static IDatabase? Redis { get; set; }
