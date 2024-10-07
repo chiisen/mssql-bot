@@ -31,6 +31,7 @@ public partial class Program
                     {
                         _YOUR_DISCORD_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Discord, words),
                         _YOUR_TELEGRAM_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Telegram, words),
+                        _YOUR_SLACK_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Slack, words),
                         _TARGET_CONNECTION_STRING = RedisHelper.GetValue<DBConfig>(
                             RedisKeys.ConnectionString,
                             words

@@ -3,6 +3,7 @@ using mssql_bot.Helper;
 using Spectre.Console;
 using System.Data.SqlClient;
 using System.Text;
+using System.Text.Json;
 using System.Timers;
 
 namespace mssql_bot.command
@@ -15,6 +16,7 @@ namespace mssql_bot.command
         public System.Timers.Timer? _TIMER;
         public string _YOUR_DISCORD_WEBHOOK_URL = "YOUR_DISCORD_WEBHOOK_URL"; // 設定你的 Discord Webhook URL
         public string _YOUR_TELEGRAM_WEBHOOK_URL = "YOUR_TELEGRAM_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
+        public string _YOUR_SLACK_WEBHOOK_URL = "_YOUR_SLACK_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
         public DBConfig _TARGET_CONNECTION_STRING = new DBConfig();
         public string _TARGET_SP_BACKUP = "git 的備份目錄";
         public string _WORLDS = "";
@@ -114,7 +116,7 @@ namespace mssql_bot.command
                     {
                         AnsiConsole.MarkupLine($"[red]There are differences in the commit.[/]");
 
-                        var differences = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ：\n";// 紀錄現在時間
+                        var differences = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ：\n"; // 紀錄現在時間
                         if (oldSP != null) // 檢查是否為 null
                         {
                             comparer
@@ -154,6 +156,11 @@ namespace mssql_bot.command
                         SendTelegramNotification(
                             $"{_WORLDS}: There are differences in the commit.({differences})"
                         );
+
+                        // 發送 Slack 通知
+                        SendSlackNotification(
+                            $"{_WORLDS}: There are differences in the commit.({differences})"
+                        );
                     }
                     else
                     {
@@ -176,7 +183,7 @@ namespace mssql_bot.command
         /// <param name="message"></param>
         private async void SendDiscordNotification(string message)
         {
-            if(string.IsNullOrEmpty(_YOUR_DISCORD_WEBHOOK_URL))
+            if (string.IsNullOrEmpty(_YOUR_DISCORD_WEBHOOK_URL))
             {
                 AnsiConsole.MarkupLine($"[yellow]Null _YOUR_DISCORD_WEBHOOK_URL.[/]");
                 return;
@@ -223,6 +230,42 @@ namespace mssql_bot.command
                 {
                     AnsiConsole.MarkupLine($"[red]Failed to send Telegram notification.[/]");
                 }
+            }
+        }
+
+        /// <summary>
+        /// 發送 Slack 通知
+        /// </summary>
+        /// <param name="message"></param>
+        private async void SendSlackNotification(string message)
+        {
+            if (string.IsNullOrEmpty(_YOUR_SLACK_WEBHOOK_URL))
+            {
+                AnsiConsole.MarkupLine($"[yellow]Null _YOUR_SLACK_WEBHOOK_URL.[/]");
+                return;
+            }
+
+            using (var client = new HttpClient())
+            {
+                var payload = new
+                {
+                    text = "訊息😋",
+                    blocks = new[] {
+                        new {
+                            type = "section",
+                            block_id = "section567",
+                            text = new {
+                                type = "mrkdwn",
+                                text = message
+                            }
+                        }
+                    }
+                };
+
+                var body = JsonSerializer.Serialize(payload);
+
+                var content = new StringContent(body, Encoding.UTF8, "application/json");
+                await client.PostAsync(_YOUR_DISCORD_WEBHOOK_URL, content);
             }
         }
     }
