@@ -55,6 +55,8 @@ public partial class Program
                                 break;
                             }
                         }
+                        // 等待 200 ms
+                        Thread.Sleep(200);
                     }
 
                     return 0;
