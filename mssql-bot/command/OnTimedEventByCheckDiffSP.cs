@@ -265,7 +265,7 @@ namespace mssql_bot.command
                 var body = JsonSerializer.Serialize(payload);
 
                 var content = new StringContent(body, Encoding.UTF8, "application/json");
-                await client.PostAsync(_YOUR_DISCORD_WEBHOOK_URL, content);
+                await client.PostAsync(_YOUR_SLACK_WEBHOOK_URL, content);
             }
         }
     }
