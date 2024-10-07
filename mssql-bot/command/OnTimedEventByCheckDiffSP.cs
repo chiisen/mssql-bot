@@ -116,7 +116,7 @@ namespace mssql_bot.command
                     {
                         AnsiConsole.MarkupLine($"[red]There are differences in the commit.[/]");
 
-                        var differences = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ：\n"; // 紀錄現在時間
+                        var differences = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ： "; // 紀錄現在時間
                         if (oldSP != null) // 檢查是否為 null
                         {
                             comparer
