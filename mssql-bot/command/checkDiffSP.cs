@@ -21,23 +21,23 @@ public partial class Program
                 command.HelpOption("-?|-h|-help");
 
                 // 輸入參數說明
-                var wordsArgument = command.Argument("[words]", "指定需要輸出的文字。");
+                var tagArgument = command.Argument("[tag]", "指定需要顯示的標籤文字。");
 
                 command.OnExecute(() =>
                 {
-                    var words = wordsArgument.HasValue ? $"_{wordsArgument.Value}" : string.Empty;
+                    var tag = tagArgument.HasValue ? $"_{tagArgument.Value}" : string.Empty;
 
                     var timer = new OnTimedEventByCheckDiffSP
                     {
-                        _YOUR_DISCORD_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Discord, words),
-                        _YOUR_TELEGRAM_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Telegram, words),
-                        _YOUR_SLACK_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Slack, words),
+                        _YOUR_DISCORD_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Discord, tag),
+                        _YOUR_TELEGRAM_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Telegram, tag),
+                        _YOUR_SLACK_WEBHOOK_URL = RedisHelper.GetValue(RedisKeys.Slack, tag),
                         _TARGET_CONNECTION_STRING = RedisHelper.GetValue<DBConfig>(
                             RedisKeys.ConnectionString,
-                            words
+                            tag
                         ),
-                        _TARGET_SP_BACKUP = RedisHelper.GetValue(RedisKeys.Backup, words),
-                        _WORLDS = words
+                        _TARGET_SP_BACKUP = RedisHelper.GetValue(RedisKeys.Backup, tag),
+                        _TAG = tag
                     };
 
                     // 設定 Timer，每10分鐘執行一次

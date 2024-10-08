@@ -9,7 +9,7 @@
 	<PackAsTool>true</PackAsTool>
 	<ToolCommandName>mssql-bot</ToolCommandName>
 	<PackageOutputPath>./nupkg</PackageOutputPath>
-	<Version>1.0.2</Version>
+	<Version>1.0.12</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -19,7 +19,7 @@ namespace mssql_bot.command
         public string _YOUR_SLACK_WEBHOOK_URL = "_YOUR_SLACK_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
         public DBConfig _TARGET_CONNECTION_STRING = new DBConfig();
         public string _TARGET_SP_BACKUP = "git 的備份目錄";
-        public string _WORLDS = "";
+        public string _TAG = "";
 
         public void OnStart(double interval)
         {
@@ -64,7 +64,11 @@ namespace mssql_bot.command
                 try
                 {
                     connection.Open();
-                    AnsiConsole.MarkupLine($"[yellow]Connection opened successfully.[/]");
+
+                    // 紀錄現在時間
+                    var nowTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    AnsiConsole.MarkupLine($"[yellow]{nowTime}: Connection opened successfully.[/]");
 
                     //获取备份目录
                     var directory = _TARGET_SP_BACKUP; // 專案指定的 key
@@ -107,16 +111,16 @@ namespace mssql_bot.command
                     Program.SaveListAsJson(spList, spPath);
                     Program.SaveListAsJson(funcList, funcPath);
 
-                    AnsiConsole.MarkupLine($"[yellow]Files have been created successfully.[/]");
+                    AnsiConsole.MarkupLine($"[yellow]{nowTime}: Files have been created successfully.[/]");
                     AnsiConsole.MarkupLine($"[blue]{spPath}[/]");
                     AnsiConsole.MarkupLine($"[blue]{funcPath}[/]");
 
                     // 檢查是否有差異
                     if (GitHelper.HasDifferences(directory))
                     {
-                        AnsiConsole.MarkupLine($"[red]There are differences in the commit.[/]");
+                        AnsiConsole.MarkupLine($"[red]{nowTime} : There are differences in the commit.[/]");
 
-                        var differences = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " ： "; // 紀錄現在時間
+                        var differences = "";
                         if (oldSP != null) // 檢查是否為 null
                         {
                             comparer
@@ -145,21 +149,21 @@ namespace mssql_bot.command
                         }
 
                         // 记录差异并准备提交到 Git
-                        GitHelper.AddAndCommit($"BOT 差異 Commit({differences})", directory);
+                        GitHelper.AddAndCommit($"{_TAG}: BOT 差異 Commit({differences})", directory);
 
                         // 發送 Discord 通知
                         SendDiscordNotification(
-                            $"{_WORLDS}: There are differences in the commit.({differences})"
+                            $"{_TAG}: There are differences in the commit.({differences})"
                         );
 
                         // 發送 TG 通知
                         SendTelegramNotification(
-                            $"{_WORLDS}: There are differences in the commit.({differences})"
+                            $"{_TAG}: There are differences in the commit.({differences})"
                         );
 
                         // 發送 Slack 通知
                         SendSlackNotification(
-                            $"{_WORLDS}: There are differences in the commit.({differences})"
+                            $"{_TAG}: There are differences in the commit.({differences})"
                         );
                     }
                     else
