@@ -111,14 +111,14 @@ namespace mssql_bot.command
                     Program.SaveListAsJson(spList, spPath);
                     Program.SaveListAsJson(funcList, funcPath);
 
-                    AnsiConsole.MarkupLine($"[yellow]{nowTime}: Files have been created successfully.[/]");
+                    AnsiConsole.MarkupLine($"[yellow]{nowTime}: 檔案已成功創建。[/]");
                     AnsiConsole.MarkupLine($"[blue]{spPath}[/]");
                     AnsiConsole.MarkupLine($"[blue]{funcPath}[/]");
 
                     // 檢查是否有差異
                     if (GitHelper.HasDifferences(directory))
                     {
-                        AnsiConsole.MarkupLine($"[red]{nowTime} : There are differences in the commit.[/]");
+                        AnsiConsole.MarkupLine($"[red]{nowTime} : 在提交中有差異。[/]");
 
                         var differences = "";
                         if (oldSP != null) // 檢查是否為 null
@@ -153,23 +153,23 @@ namespace mssql_bot.command
 
                         // 發送 Discord 通知
                         SendDiscordNotification(
-                            $"{_TAG}: There are differences in the commit.({differences})"
+                            $"{_TAG}: 在提交中有差異。({differences})"
                         );
 
                         // 發送 TG 通知
                         SendTelegramNotification(
-                            $"{_TAG}: There are differences in the commit.({differences})"
+                            $"{_TAG}: 在提交中有差異。({differences})"
                         );
 
                         // 發送 Slack 通知
                         SendSlackNotification(
-                            $"{_TAG}: There are differences in the commit.({differences})"
+                            $"{_TAG}: 在提交中有差異。({differences})"
                         );
                     }
                     else
                     {
                         AnsiConsole.MarkupLine(
-                            $"[green]There are not differences in the commit.[/]"
+                            $"[green]在提交中沒有差異。[/]"
                         );
                     }
                 }
