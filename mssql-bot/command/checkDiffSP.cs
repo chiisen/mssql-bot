@@ -7,10 +7,6 @@ using static mssql_bot.helper.RedisHelper;
 public partial class Program
 {
     /// <summary>
-    /// checkspdiff 的計數器
-    /// </summary>
-    public static int checkDiffCount = 0;
-    /// <summary>
     /// 檢查 SP 的異動
     /// 命令列引數: checkspdiff
     /// </summary>
@@ -47,7 +43,7 @@ public partial class Program
                     // 設定 Timer，每10分鐘執行一次
                     timer.OnStart(600000);
 
-                    AnsiConsole.MarkupLine($"[yellow]{checkDiffCount}: Press 'Esc' to exit the program.[/]");
+                    AnsiConsole.MarkupLine($"[yellow]Press 'Esc' to exit the program.[/]");
 
                     // 監聽 Esc 鍵
                     while (true)
