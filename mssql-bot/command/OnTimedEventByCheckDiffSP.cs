@@ -144,6 +144,15 @@ namespace mssql_bot.command
                             differences += $"FN: 【第一次建立】 、 ";
                         }
 
+                        // 移除 differences 字串由最後面往前算，第一個碰到的 "、" 的字元
+                        // 例如： "2022-01-01 12:00:00 ： SP: sp1 、 SP: sp2 、 FN: fn1 、 " => "2022-01-01 12:00:00 ： SP: sp1 、 SP: sp2 、 FN: fn1"
+                        // 特別要注意: differences.LastIndexOf("、") 如果沒找到就不需要做移除的動作
+                        var lastChar = "、";
+                        if (differences.LastIndexOf(lastChar) == differences.Length - 1)
+                        {
+                            differences = differences.Remove(differences.LastIndexOf(lastChar));
+                        }
+
                         // 记录差异并准备提交到 Git
                         GitHelper.AddAndCommit($"BOT 差異 Commit({differences})", directory);
 
