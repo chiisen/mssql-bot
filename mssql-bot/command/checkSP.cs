@@ -1,10 +1,10 @@
-﻿using System.Data.SqlClient;
-using System.Text.RegularExpressions;
-using Microsoft.SqlServer.TransactSql.ScriptDom;
+﻿using Microsoft.SqlServer.TransactSql.ScriptDom;
 using mssql_bot;
 using mssql_bot.helper;
 using Newtonsoft.Json;
 using Spectre.Console;
+using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using static mssql_bot.helper.RedisHelper;
 
 public partial class Program
@@ -20,8 +20,7 @@ public partial class Program
             command =>
             {
                 // 第二層 Help 的標題
-                command.Description =
-                    "檢查 SP - 目前 case 是 @Output_ErrorCode 型別為 tinyint，卻給負值";
+                command.Description = "檢查 SP - 目前 case 是 @Output_ErrorCode 型別為 tinyint，卻給負值";
                 command.HelpOption("-?|-h|-help");
 
                 // 輸入參數說明
@@ -30,7 +29,10 @@ public partial class Program
                 command.OnExecute(() =>
                 {
                     var words = wordsArgument.HasValue ? $"_{wordsArgument.Value}" : string.Empty;
-                     var bbConfig = RedisHelper.GetValue<DBConfig>(RedisKeys.ConnectionString, words); // 專案指定的 key
+                    var bbConfig = RedisHelper.GetValue<DBConfig>(
+                        RedisKeys.ConnectionString,
+                        words
+                    ); // 專案指定的 key
                     if (bbConfig.connectionString == string.Empty)
                     {
                         AnsiConsole.MarkupLine($"[red]empty connectionString[/]");
@@ -50,7 +52,7 @@ public partial class Program
 
                             var spList = ExecQuery(queryStoredProcedures, connection);
 
-                            var pattern = @"@Output_ErrorCode\s*=\s*-\d+";
+                            var pattern = @"@Output_ErrorCode\s*=\s*\d+";
                             Matches(spList, pattern);
                         }
                         catch (Exception ex)
@@ -111,8 +113,8 @@ public partial class Program
                         );
                     }
 
-                    // 列出 SQL 語法寫到 Redis
-                    RedisHelper.SetValue(procedureName, procedureCode);
+                    // 列出 SQL 語法寫到 Redis (測試中資料很多，先不存)
+                    //RedisHelper.SetValue(procedureName, procedureCode);
 
                     var parser = new TSql130Parser(false);
                     TSqlFragment fragment;
@@ -129,8 +131,8 @@ public partial class Program
                         {
                             AnsiConsole.MarkupLine($"[red]Error: {error.Message}[/]");
 
-                            // 列出 SQL 語法寫到 Redis
-                            RedisHelper.SetValue(procedureName, procedureCode);
+                            // 列出 SQL 語法寫到 Redis (測試中資料很多，先不存)
+                            //RedisHelper.SetValue(procedureName, procedureCode);
                         }
                     }
                     else
@@ -166,9 +168,49 @@ public partial class Program
                             {
                                 if (customVisitor.Assignments.ContainsKey(param))
                                 {
-                                    AnsiConsole.MarkupLine(
-                                        $"[green]{param} = {customVisitor.Assignments[param]}[/]"
-                                    );
+                                    var type = "";
+                                    // IntegerLiteral 類表示 T-SQL 語法中的整數字面量。例如，123 或 -456 都是整數字面量。
+                                    if (
+                                        customVisitor.Assignments[param]
+                                        == typeof(IntegerLiteral).ToString()
+                                    )
+                                    {
+                                        type = "數值";
+                                        AnsiConsole.MarkupLine($"[green]{param} => {type}[/]");
+                                    }
+                                    else if (
+                                        customVisitor.Assignments[param]
+                                        == typeof(FunctionCall).ToString()
+                                    )
+                                    {
+                                        // FunctionCall 類表示 T-SQL 語法中的函數調用。例如，GETDATE() 或 SUM(columnName) 都是函數調用。
+                                        type = "函數";
+                                        AnsiConsole.MarkupLine($"[green]{param} => {type}[/]");
+                                    }
+                                    else if (
+                                        customVisitor.Assignments[param]
+                                        == typeof(GlobalVariableExpression).ToString()
+                                    )
+                                    {
+                                        // GlobalVariableExpression 這個類用於表示 T - SQL 中的全域變數，例如 @@VERSION 或 @@ERROR。這些變數通常用於獲取 SQL Server 的系統資訊或狀態。
+                                        type = "全域變數";
+                                        AnsiConsole.MarkupLine($"[green]{param} => {type}[/]");
+                                    }
+                                    else if (
+                                        customVisitor.Assignments[param]
+                                        == typeof(BinaryExpression).ToString()
+                                    )
+                                    {
+                                        // BinaryExpression 這個類用於表示 T - SQL 中的二元運算，例如加法(+)、減法(-)、乘法(*)、除法(/) 等等。二元運算是指有兩個操作數的運算。
+                                        type = "二元運算";
+                                        AnsiConsole.MarkupLine($"[green]{param} => {type}[/]");
+                                    }
+                                    else
+                                    {
+                                        AnsiConsole.MarkupLine(
+                                            $"[green]{param} => {customVisitor.Assignments[param]}[/]"
+                                        );
+                                    }
                                 }
                                 else
                                 {
@@ -187,7 +229,18 @@ public partial class Program
                         {
                             foreach (var returnValue in customVisitor.ReturnValues)
                             {
-                                AnsiConsole.MarkupLine($"[green]{returnValue}[/]");
+                                var type = "";
+                                // VariableReference 這個類用於表示 T - SQL 中的變數，例如 @MyVariable。變數引用通常用於查找和操作 SQL 腳本中的變數。
+                                if (returnValue.ToString() == typeof(VariableReference).ToString())
+                                {
+                                    type = "腳本變數";
+                                    var name = ((VariableReference)returnValue).Name;
+                                    AnsiConsole.MarkupLine($"[green]{name} => {type}[/]");
+                                }
+                                else
+                                {
+                                    AnsiConsole.MarkupLine($"[green]{returnValue}[/]");
+                                }
                             }
                         }
                         else
@@ -230,7 +283,7 @@ public partial class Program
 
             if (procedureCode != null && procedureName != null)
             {
-                if(procedureCode.Length == 0)
+                if (procedureCode.Length == 0)
                 {
                     // 沒有內容，可能是權限不足，不需要再處理了
                     throw new Exception($"{procedureName} 權限不足，無法取得程式碼。");

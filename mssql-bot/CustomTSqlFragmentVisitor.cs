@@ -2,10 +2,10 @@
 
 public class CustomTSqlFragmentVisitor : TSqlFragmentVisitor
 {
-    public List<string> InputParams { get; } = [];
-    public List<string> OutputParams { get; } = [];
-    public Dictionary<string, string> Assignments { get; } = [];
-    public List<string> ReturnValues { get; } = [];
+    public List<string> InputParams { get; } = new List<string>();
+    public List<string> OutputParams { get; } = new List<string>();
+    public Dictionary<string, string> Assignments { get; } = new Dictionary<string, string>();
+    public List<ScalarExpression> ReturnValues { get; } = new List<ScalarExpression>();
 
     public override void Visit(ProcedureParameter node)
     {
@@ -44,7 +44,7 @@ public class CustomTSqlFragmentVisitor : TSqlFragmentVisitor
         }
         if (node.Expression != null)
         {
-            ReturnValues.Add(node.Expression?.ToString() ?? string.Empty);
+            ReturnValues.Add(node.Expression);
         }
         base.Visit(node);
     }
