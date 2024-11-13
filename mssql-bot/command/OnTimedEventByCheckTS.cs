@@ -53,6 +53,7 @@ namespace mssql_bot.command
                 AnsiConsole.MarkupLine($"[red]empty connectionString[/]");
                 return;
             }
+            string queryLastLogin = DbHelper.QUERY_LAST_LOGIN;
 
             string queryClubs = DbHelper.QUERY_TS_CLUB;
             string queryUnits = DbHelper.QUERY_TS_UNIT;
@@ -66,30 +67,112 @@ namespace mssql_bot.command
                     // 紀錄現在時間
                     var nowTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    AnsiConsole.MarkupLine($"[yellow]{nowTime}: Connection opened successfully.[/]");
+                    AnsiConsole.MarkupLine(
+                        $"[yellow]{nowTime}: Connection opened successfully.[/]"
+                    );
 
-                    var clubList = Program.ExecQueryClubTS(queryClubs, connection);
-                    var unitList = Program.ExecQueryUnitTS(queryUnits, connection);
+                    // 我要先算出現在時間減去 N 分鐘的時間
+                    var beforeTime = DateTime.Now.AddMinutes(-10).ToString("yyyy-MM-dd HH:mm:ss");
+                    var queryRangeTime = queryLastLogin.Replace("@StartTime", $"'{beforeTime}'");
 
-                    clubList.ForEach(club =>
+                    var lastLoginList = Program.ExecQueryLastLoginTS(queryRangeTime, connection);
+                    if (lastLoginList.Count == 0)
                     {
-                        // 檢查 Game_id 不能有重複的情況
-                        var duplicateGameId = clubList.FindAll(x => x.Game_id == club.Game_id).Count;
-                        if (duplicateGameId > 1)
-                        {
-                            AnsiConsole.MarkupLine($"[red]Duplicate Game_id: {club.Game_id}[/]");
-                            AnsiConsole.MarkupLine($"[yellow]Club: {club.UnitKey}, {club.Flag_id}, {club.Game_id}, {club.TuiSui}[/]");
-                        }
-                    });
+                        AnsiConsole.MarkupLine($"[green]{nowTime} 無人登入，不執行驗證!!![/]");
+                        return;
+                    }
 
-                    unitList.ForEach(unit =>
+                    // 印出 lastLoginList 的 CLUB_ID
+                    lastLoginList.ForEach(lastLogin =>
                     {
-                        // 檢查 Game_id 與 Tag_Id 中不能有重複的情況
-                        var duplicateGameId = unitList.FindAll(x => x.Game_id == unit.Game_id && x.Tag_Id == unit.Tag_Id).Count;
-                        if (duplicateGameId > 1)
+                        AnsiConsole.MarkupLine(
+                            $"[yellow] 有人進入官網 CLUB_ID: {lastLogin.CLUB_ID}, UPDATE_TIME: {lastLogin.UPDATE_TIME}, IP: {lastLogin.IP}[/]"
+                        );
+                        // 發送 Discord 通知
+                        SendDiscordNotification(
+                            $"{_TAG}: 有人進入官網 CLUB_ID: {lastLogin.CLUB_ID}, UPDATE_TIME: {lastLogin.UPDATE_TIME}, IP: {lastLogin.IP}"
+                        );
+
+                        var queryClubById = queryClubs.Replace(
+                            "@Club_id",
+                            $"'{lastLogin.CLUB_ID}'"
+                        );
+                        var clubList = Program.ExecQueryClubTS(queryClubById, connection);
+                        clubList.ForEach(club =>
                         {
-                            AnsiConsole.MarkupLine($"[red]Duplicate Game_id: {unit.Game_id}[/]");
-                            AnsiConsole.MarkupLine($"[yellow]Uint: {unit.UnitKey}, {unit.Tag_Id}, {unit.Game_id}, {unit.TuiSui}[/]");
+                            // 檢查 Game_id 不能有重複的情況
+                            var duplicateGameId = clubList
+                                .FindAll(x => x.Game_id == club.Game_id)
+                                .Count;
+                            if (duplicateGameId > 1)
+                            {
+                                AnsiConsole.MarkupLine(
+                                    $"[red]Duplicate Game_id: {club.Game_id}[/]"
+                                );
+                                AnsiConsole.MarkupLine(
+                                    $"[yellow]CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}[/]"
+                                );
+
+                                // 發送 Discord 通知
+                                SendDiscordNotification(
+                                    $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}"
+                                );
+                                /*
+                                // 發送 TG 通知
+                                SendTelegramNotification(
+                                    $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}"
+                                );
+
+                                // 發送 Slack 通知
+                                SendSlackNotification(
+                                    $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}"
+                                );
+                                */
+                            }
+                        });
+
+                        if (clubList.Count > 0)
+                        {
+                            var queryUnitById = queryClubs.Replace(
+                                "@Club_id",
+                                $"'{clubList[0].UnitKey}'"
+                            );
+
+                            var unitList = Program.ExecQueryUnitTS(queryUnitById, connection);
+
+                            unitList.ForEach(unit =>
+                            {
+                                // 檢查 Game_id 與 Tag_Id 中不能有重複的情況
+                                var duplicateGameId = unitList
+                                    .FindAll(
+                                        x => x.Game_id == unit.Game_id && x.Tag_Id == unit.Tag_Id
+                                    )
+                                    .Count;
+                                if (duplicateGameId > 1)
+                                {
+                                    AnsiConsole.MarkupLine(
+                                        $"[red]Duplicate Game_id: {unit.Game_id} AND Tag_Id: {unit.Tag_Id}[/]"
+                                    );
+                                    AnsiConsole.MarkupLine(
+                                        $"[yellow]UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}[/]"
+                                    );
+                                    // 發送 Discord 通知
+                                    SendDiscordNotification(
+                                        $"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}"
+                                    );
+                                    /*
+                                    // 發送 TG 通知
+                                    SendTelegramNotification(
+                                        $"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}"
+                                    );
+
+                                    // 發送 Slack 通知
+                                    SendSlackNotification(
+                                        $"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}"
+                                    );
+                                    */
+                                }
+                            });
                         }
                     });
 
@@ -176,14 +259,13 @@ namespace mssql_bot.command
                 var payload = new
                 {
                     text = "訊息😋",
-                    blocks = new[] {
-                        new {
+                    blocks = new[]
+                    {
+                        new
+                        {
                             type = "section",
                             block_id = "section567",
-                            text = new {
-                                type = "mrkdwn",
-                                text = message
-                            }
+                            text = new { type = "mrkdwn", text = message }
                         }
                     }
                 };

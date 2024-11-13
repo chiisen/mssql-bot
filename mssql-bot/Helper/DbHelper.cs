@@ -33,13 +33,21 @@ namespace mssql_bot.helper
             ORDER BY ROUTINE_NAME ASC;
         ";
 
+        public static string QUERY_LAST_LOGIN = @"
+        SELECT TOP (1000) CLUB_ID
+              ,UPDATE_TIME
+              ,IP
+          FROM HKNetGame_HJ.dbo.T_AloneLogin_Club_LastLogin
+          WHERE UPDATE_TIME >= @StartTime
+        ";
+
         public static string QUERY_TS_CLUB = @"
-        SELECT UnitKey, Flag_id, Game_id, TuiSui FROM dbo.FN_GetClubTuiSuiByClub_id('2005293654')
-        ";// @Club_id
+        SELECT UnitKey, Flag_id, Game_id, TuiSui FROM dbo.FN_GetClubTuiSuiByClub_id(@Club_id)
+        ";
 
         public static string QUERY_TS_UNIT = @"
-        SELECT UnitKey, Tag_Id, TuiSui, Game_id FROM dbo.FN_GetAncestorsTuiSuiByUnitKey('131046')
-        ";// @UnitKey => UnitHID 暫時無法解析
+        SELECT UnitKey, Tag_Id, TuiSui, Game_id FROM dbo.FN_GetAncestorsTuiSuiByUnitKey(@UnitKey)
+        ";// UnitHID 暫時無法解析
     }
 
     /// <summary>
@@ -47,8 +55,34 @@ namespace mssql_bot.helper
     /// </summary>
     public class SPData
     {
+        /// <summary>
+        /// 名稱
+        /// </summary>
         public string? ROUTINE_NAME { get; set; }
+        /// <summary>
+        /// 內容
+        /// </summary>
         public string? ROUTINE_DEFINITION { get; set; }
+    }
+
+    /// <summary>
+    /// 最後登入時間
+    /// </summary>
+
+    public class LastLoginData
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? CLUB_ID { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? UPDATE_TIME { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? IP { get; set; }
     }
 
     /// <summary>

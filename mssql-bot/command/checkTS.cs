@@ -73,6 +73,57 @@ public partial class Program
     /// <param name="query"></param>
     /// <param name="connection"></param>
     /// <returns></returns>
+    public static List<LastLoginData> ExecQueryLastLoginTS(string query, SqlConnection connection)
+    {
+        var command = new SqlCommand(query, connection);
+
+        AnsiConsole.MarkupLine($"[yellow]【執行 SQL 查詢，並將結果回傳】[/]");
+
+        AnsiConsole.MarkupLine($"[green]{query}[/]");
+
+        var reader = command.ExecuteReader();
+
+        var list = new List<LastLoginData>();
+        while (reader.Read())
+        {
+            var club_id = reader["CLUB_ID"].ToString();
+            var update_time = Convert.ToDateTime(reader["UPDATE_TIME"]).ToString("yyyy-MM-dd HH:mm:ss");
+            var ip = reader["IP"].ToString();
+
+            if (club_id != null && update_time != null && ip != null )
+            {
+                if (club_id.Length == 0)
+                {
+                    // 沒有內容，可能是權限不足，不需要再處理了
+                    throw new Exception($"{club_id} 權限不足，無法取得程式碼。");
+                }
+                list.Add(
+                    new LastLoginData
+                    {
+                        CLUB_ID = club_id,
+                        UPDATE_TIME = update_time,
+                        IP = ip
+                    }
+                );
+            }
+            else
+            {
+                AnsiConsole.MarkupLine(
+                    $"[red]CLUB_ID ({club_id}) is null.[/]"
+                );
+            }
+        }
+
+        reader.Close();
+        return list;
+    }
+
+    /// <summary>
+    /// 執行 SQL 查詢，並將結果回傳
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="connection"></param>
+    /// <returns></returns>
     public static List<TS_ClubData> ExecQueryClubTS(string query, SqlConnection connection)
     {
         var command = new SqlCommand(query, connection);
@@ -111,7 +162,7 @@ public partial class Program
             else
             {
                 AnsiConsole.MarkupLine(
-                    $"[red]unitKey ({unitKey}) is null.[/]"
+                    $"[red]unitKey ({unitKey}), flag_id ({flag_id}), game_id ({game_id}), tuiSui ({tuiSui}) is null.[/]"
                 );
             }
         }
@@ -164,7 +215,7 @@ public partial class Program
             else
             {
                 AnsiConsole.MarkupLine(
-                    $"[red]unitKey ({unitKey}) is null.[/]"
+                    $"[red]unitKey ({unitKey}), tag_Id ({tag_Id}), game_id ({game_id}), TuiSui ({tuiSui}) is null.[/]"
                 );
             }
         }
