@@ -17,7 +17,7 @@ namespace mssql_bot.command
         public string _YOUR_DISCORD_WEBHOOK_URL = "YOUR_DISCORD_WEBHOOK_URL"; // 設定你的 Discord Webhook URL
         public string _YOUR_TELEGRAM_WEBHOOK_URL = "YOUR_TELEGRAM_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
         public string _YOUR_SLACK_WEBHOOK_URL = "_YOUR_SLACK_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
-        public DBConfig _TARGET_CONNECTION_STRING = new DBConfig();
+        public DBConfig _TARGET_CONNECTION_STRING = new();
         public string _TARGET_SP_BACKUP = "git 的備份目錄";
         public string _TAG = "";
 
@@ -104,8 +104,8 @@ namespace mssql_bot.command
                     }
 
                     // 在這裡執行資料庫操作
-                    var spList = Program.ExecQuery(queryStoredProcedures, connection);
-                    var funcList = Program.ExecQuery(queryFunctions, connection);
+                    var spList = Program.ExecQuerySP(queryStoredProcedures, connection);
+                    var funcList = Program.ExecQuerySP(queryFunctions, connection);
 
                     // 將 spList 和 funcList 儲存為 .json 檔案
                     Program.SaveListAsJson(spList, spPath);
@@ -270,6 +270,53 @@ namespace mssql_bot.command
 
                 var content = new StringContent(body, Encoding.UTF8, "application/json");
                 await client.PostAsync(_YOUR_SLACK_WEBHOOK_URL, content);
+            }
+        }
+
+        /// <summary>
+        /// SP 紀錄比對
+        /// </summary>
+        public class SPComparer
+        {
+            /// <summary>
+            /// 讀取 SP 紀錄檔案 Json 轉成 List
+            /// </summary>
+            /// <param name="filePath"></param>
+            /// <returns></returns>
+            public List<SPData>? ReadJsonFile(string filePath)
+            {
+                var jsonString = File.ReadAllText(filePath);
+                return JsonSerializer.Deserialize<List<SPData>>(jsonString);
+            }
+
+            public List<string> CompareRoutineNames(List<SPData> previousList, List<SPData> currentList)
+            {
+                var previousDefinitions = previousList
+                    .Where(sp => sp.ROUTINE_NAME != null)
+                    .ToDictionary(sp => sp.ROUTINE_NAME!, sp => sp.ROUTINE_DEFINITION);
+
+                var currentDefinitions = currentList
+                    .Where(sp => sp.ROUTINE_NAME != null)
+                    .ToDictionary(sp => sp.ROUTINE_NAME!, sp => sp.ROUTINE_DEFINITION);
+
+                var differences = new List<string>();
+
+                foreach (var current in currentDefinitions)
+                {
+                    if (previousDefinitions.TryGetValue(current.Key, out var previousDefinition))
+                    {
+                        if (previousDefinition != current.Value)
+                        {
+                            differences.Add(current.Key);
+                        }
+                    }
+                    else
+                    {
+                        differences.Add(current.Key);
+                    }
+                }
+
+                return differences;
             }
         }
     }

@@ -57,6 +57,8 @@ partial class Program
         CheckSP();
 
         CheckDiffSP();
+
+        CheckTS();
         #endregion 【註冊 Command】
 
 

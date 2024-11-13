@@ -50,7 +50,7 @@ public partial class Program
 
                             // 在這裡執行資料庫操作
 
-                            var spList = ExecQuery(queryStoredProcedures, connection);
+                            var spList = ExecQuerySP(queryStoredProcedures, connection);
 
                             var pattern = @"@Output_ErrorCode\s*=\s*\d+";
                             Matches(spList, pattern);
@@ -265,7 +265,7 @@ public partial class Program
     /// <param name="query"></param>
     /// <param name="connection"></param>
     /// <returns></returns>
-    public static List<SPData> ExecQuery(string query, SqlConnection connection)
+    public static List<SPData> ExecQuerySP(string query, SqlConnection connection)
     {
         var command = new SqlCommand(query, connection);
 

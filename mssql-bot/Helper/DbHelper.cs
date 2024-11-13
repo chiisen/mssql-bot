@@ -32,6 +32,14 @@ namespace mssql_bot.helper
             f.type IN ('FN', 'IF', 'TF')
             ORDER BY ROUTINE_NAME ASC;
         ";
+
+        public static string QUERY_TS_CLUB = @"
+        SELECT UnitKey, Flag_id, Game_id, TuiSui FROM dbo.FN_GetClubTuiSuiByClub_id('2005293654')
+        ";// @Club_id
+
+        public static string QUERY_TS_UNIT = @"
+        SELECT UnitKey, Tag_Id, TuiSui, Game_id FROM dbo.FN_GetAncestorsTuiSuiByUnitKey('131046')
+        ";// @UnitKey => UnitHID 暫時無法解析
     }
 
     /// <summary>
@@ -43,42 +51,53 @@ namespace mssql_bot.helper
         public string? ROUTINE_DEFINITION { get; set; }
     }
 
-    public class SPComparer
+    /// <summary>
+    /// TS Club 資料
+    /// </summary>
+    public class TS_ClubData
     {
-        public List<SPData>? ReadJsonFile(string filePath)
-        {
-            var jsonString = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<List<SPData>>(jsonString);
-        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? UnitKey { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? Flag_id { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? Game_id { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public decimal TuiSui { get; set; }
+    }
 
-        public List<string> CompareRoutineNames(List<SPData> previousList, List<SPData> currentList)
-        {
-            var previousDefinitions = previousList
-                .Where(sp => sp.ROUTINE_NAME != null)
-                .ToDictionary(sp => sp.ROUTINE_NAME!, sp => sp.ROUTINE_DEFINITION);
-
-            var currentDefinitions = currentList
-                .Where(sp => sp.ROUTINE_NAME != null)
-                .ToDictionary(sp => sp.ROUTINE_NAME!, sp => sp.ROUTINE_DEFINITION);
-
-            var differences = new List<string>();
-
-            foreach (var current in currentDefinitions)
-            {
-                if (previousDefinitions.TryGetValue(current.Key, out var previousDefinition))
-                {
-                    if (previousDefinition != current.Value)
-                    {
-                        differences.Add(current.Key);
-                    }
-                }
-                else
-                {
-                    differences.Add(current.Key);
-                }
-            }
-
-            return differences;
-        }
+    /// <summary>
+    /// TS Unit 資料
+    /// </summary>
+    public class TS_UnitData
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? UnitKey { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? Tag_Id { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? UnitHID { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public decimal TuiSui { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string? Game_id { get; set; }
     }
 }
