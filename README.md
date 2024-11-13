@@ -125,3 +125,8 @@ mssql-bot checkdiffsp DEV
 ```
 依據情境先給命令為 checkdiffsp，需要時可再新增命令  
 
+# 參考
+查詢所有安裝的 .NET 版本
+```
+dotnet --list-sdks
+```

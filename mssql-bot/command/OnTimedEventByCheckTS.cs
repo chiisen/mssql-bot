@@ -88,10 +88,6 @@ namespace mssql_bot.command
                         AnsiConsole.MarkupLine(
                             $"[yellow] 有人進入官網 CLUB_ID: {lastLogin.CLUB_ID}, UPDATE_TIME: {lastLogin.UPDATE_TIME}, IP: {lastLogin.IP}[/]"
                         );
-                        // 發送 Discord 通知
-                        SendDiscordNotification(
-                            $"{_TAG}: 有人進入官網 CLUB_ID: {lastLogin.CLUB_ID}, UPDATE_TIME: {lastLogin.UPDATE_TIME}, IP: {lastLogin.IP}"
-                        );
 
                         var queryClubById = queryClubs.Replace(
                             "@Club_id",
@@ -117,7 +113,7 @@ namespace mssql_bot.command
                                 SendDiscordNotification(
                                     $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}"
                                 );
-                                /*
+                                
                                 // 發送 TG 通知
                                 SendTelegramNotification(
                                     $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}"
@@ -127,7 +123,6 @@ namespace mssql_bot.command
                                 SendSlackNotification(
                                     $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}"
                                 );
-                                */
                             }
                         });
 
@@ -160,7 +155,7 @@ namespace mssql_bot.command
                                     SendDiscordNotification(
                                         $"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}"
                                     );
-                                    /*
+
                                     // 發送 TG 通知
                                     SendTelegramNotification(
                                         $"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}"
@@ -170,7 +165,6 @@ namespace mssql_bot.command
                                     SendSlackNotification(
                                         $"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}"
                                     );
-                                    */
                                 }
                             });
                         }
