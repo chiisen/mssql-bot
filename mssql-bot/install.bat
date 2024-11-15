@@ -1,7 +1,5 @@
 echo 【請輸入 .\install.bat】
 
-cd mssql-bot
-
 echo 【解除安裝全域套件】
 del .\nupkg\*.nupkg
 
