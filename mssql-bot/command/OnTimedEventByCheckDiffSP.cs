@@ -2,7 +2,6 @@
 using mssql_bot.Helper;
 using Spectre.Console;
 using System.Data.SqlClient;
-using System.Text;
 using System.Text.Json;
 using System.Timers;
 
@@ -21,8 +20,14 @@ namespace mssql_bot.command
         public string _TARGET_SP_BACKUP = "git 的備份目錄";
         public string _TAG = "";
 
+        private NotificationHelper _notificationHelper = new();
+
         public void OnStart(double interval)
         {
+            _notificationHelper._YOUR_DISCORD_WEBHOOK_URL = _YOUR_DISCORD_WEBHOOK_URL;
+            _notificationHelper._YOUR_TELEGRAM_WEBHOOK_URL = _YOUR_TELEGRAM_WEBHOOK_URL;
+            _notificationHelper._YOUR_SLACK_WEBHOOK_URL = _YOUR_SLACK_WEBHOOK_URL;
+
             _TIMER = new System.Timers.Timer(interval);
             _TIMER.Elapsed += OnTimedEvent;
             _TIMER.AutoReset = true;
@@ -68,7 +73,9 @@ namespace mssql_bot.command
                     // 紀錄現在時間
                     var nowTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                    AnsiConsole.MarkupLine($"[yellow]{nowTime}: Connection opened successfully.[/]");
+                    AnsiConsole.MarkupLine(
+                        $"[yellow]{nowTime}: Connection opened successfully.[/]"
+                    );
 
                     //获取备份目录
                     var directory = _TARGET_SP_BACKUP; // 專案指定的 key
@@ -152,25 +159,23 @@ namespace mssql_bot.command
                         GitHelper.AddAndCommit($"{_TAG}: BOT 差異 Commit({differences})", directory);
 
                         // 發送 Discord 通知
-                        SendDiscordNotification(
+                        _notificationHelper.SendDiscordNotification(
                             $"{_TAG}: 在提交中有差異。({differences})"
                         );
 
                         // 發送 TG 通知
-                        SendTelegramNotification(
+                        _notificationHelper.SendTelegramNotification(
                             $"{_TAG}: 在提交中有差異。({differences})"
                         );
 
                         // 發送 Slack 通知
-                        SendSlackNotification(
+                        _notificationHelper.SendSlackNotification(
                             $"{_TAG}: 在提交中有差異。({differences})"
                         );
                     }
                     else
                     {
-                        AnsiConsole.MarkupLine(
-                            $"[green]在提交中沒有差異。[/]"
-                        );
+                        AnsiConsole.MarkupLine($"[green]在提交中沒有差異。[/]");
                     }
                 }
                 catch (Exception ex)
@@ -178,98 +183,6 @@ namespace mssql_bot.command
                     //异常处理
                     AnsiConsole.MarkupLine($"[red]An error occurred: {ex.Message}[/]");
                 }
-            }
-        }
-
-        /// <summary>
-        /// 發送 Discord 通知
-        /// </summary>
-        /// <param name="message"></param>
-        private async void SendDiscordNotification(string message)
-        {
-            if (string.IsNullOrEmpty(_YOUR_DISCORD_WEBHOOK_URL))
-            {
-                AnsiConsole.MarkupLine($"[yellow]Null _YOUR_DISCORD_WEBHOOK_URL.[/]");
-                return;
-            }
-
-            using (var client = new HttpClient())
-            {
-                var content = new StringContent(
-                    $"{{\"content\": \"{message}\"}}",
-                    Encoding.UTF8,
-                    "application/json"
-                );
-                await client.PostAsync(_YOUR_DISCORD_WEBHOOK_URL, content);
-            }
-        }
-
-        /// <summary>
-        /// 發送 TG 通知
-        /// </summary>
-        /// <param name="message"></param>
-        private async void SendTelegramNotification(string message)
-        {
-            if (string.IsNullOrEmpty(_YOUR_TELEGRAM_WEBHOOK_URL))
-            {
-                AnsiConsole.MarkupLine($"[yellow]Null _YOUR_TELEGRAM_WEBHOOK_URL.[/]");
-                return;
-            }
-
-            using (var client = new HttpClient())
-            {
-                // 將訊息編碼成 URL 格式
-                var encodedMessage = Uri.EscapeDataString(message);
-                var url = $"{_YOUR_TELEGRAM_WEBHOOK_URL}{encodedMessage}";
-
-                // 發送 GET 請求
-                var response = await client.GetAsync(url);
-
-                // 檢查回應狀態碼
-                if (response.IsSuccessStatusCode)
-                {
-                    AnsiConsole.MarkupLine($"[green]Telegram notification sent successfully.[/]");
-                }
-                else
-                {
-                    AnsiConsole.MarkupLine($"[red]Failed to send Telegram notification.[/]");
-                }
-            }
-        }
-
-        /// <summary>
-        /// 發送 Slack 通知
-        /// </summary>
-        /// <param name="message"></param>
-        private async void SendSlackNotification(string message)
-        {
-            if (string.IsNullOrEmpty(_YOUR_SLACK_WEBHOOK_URL))
-            {
-                AnsiConsole.MarkupLine($"[yellow]Null _YOUR_SLACK_WEBHOOK_URL.[/]");
-                return;
-            }
-
-            using (var client = new HttpClient())
-            {
-                var payload = new
-                {
-                    text = "訊息😋",
-                    blocks = new[] {
-                        new {
-                            type = "section",
-                            block_id = "section567",
-                            text = new {
-                                type = "mrkdwn",
-                                text = message
-                            }
-                        }
-                    }
-                };
-
-                var body = JsonSerializer.Serialize(payload);
-
-                var content = new StringContent(body, Encoding.UTF8, "application/json");
-                await client.PostAsync(_YOUR_SLACK_WEBHOOK_URL, content);
             }
         }
 
@@ -289,7 +202,10 @@ namespace mssql_bot.command
                 return JsonSerializer.Deserialize<List<SPData>>(jsonString);
             }
 
-            public List<string> CompareRoutineNames(List<SPData> previousList, List<SPData> currentList)
+            public List<string> CompareRoutineNames(
+                List<SPData> previousList,
+                List<SPData> currentList
+            )
             {
                 var previousDefinitions = previousList
                     .Where(sp => sp.ROUTINE_NAME != null)

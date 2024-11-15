@@ -11,7 +11,7 @@ public partial class Program
     /// 檢查 TS 的異動
     /// 命令列引數: checkts
     /// </summary>
-    public static void CheckTS()
+    private static void CheckTS()
     {
         _ = App.Command(
             "checkts",

@@ -478,3 +478,4 @@ $RECYCLE.BIN/
 /.idea
 /*.ico
 /mssql-bot/*.ipynb
+/mssql-bot/.idea

@@ -35,6 +35,10 @@ namespace mssql_bot.helper
             /// Slack Webhook URL，實際 key 為 `mssql-bot:mssql-bot-slack`
             /// </summary>
             Slack,
+            /// <summary>
+            /// PowerShell Script 路徑，實際 key 為 `mssql-bot:mssql-bot-ps1`
+            /// </summary>
+            Ps1,
         }
 
         public static Dictionary<RedisKeys, string> RedisKeyDictionary = new Dictionary<
@@ -47,6 +51,7 @@ namespace mssql_bot.helper
             { RedisKeys.Discord, "mssql-bot-discord" },
             { RedisKeys.Telegram, "mssql-bot-telegram" },
             { RedisKeys.Slack, "mssql-bot-slack" },
+            { RedisKeys.Ps1, "mssql-bot-ps1" },
         };
 
         protected static IDatabase? Redis { get; set; }

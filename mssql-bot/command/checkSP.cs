@@ -13,7 +13,7 @@ public partial class Program
     /// 檢查 SP - 目前 case 是 @Output_ErrorCode 型別為 tinyint，卻給負值
     /// 命令列引數: checksp
     /// </summary>
-    public static void CheckSP()
+    private static void CheckSP()
     {
         _ = App.Command(
             "checksp",
