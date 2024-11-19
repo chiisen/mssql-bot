@@ -133,11 +133,11 @@ namespace mssql_bot.command
                             var (diffList, delList) = comparer.CompareRoutineNames(oldSP, spList);
                             diffList.ForEach(sp =>
                             {
-                                differences += $"SP: {sp} 、 ";
+                                differences += $"+異動 SP: {sp} 、 ";
                             });
                             delList.ForEach(sp =>
                             {
-                                differences += $"刪除 SP: {sp} 、 ";
+                                differences += $"-刪除 SP: {sp} 、 ";
                             });
                         }
                         else
@@ -149,11 +149,11 @@ namespace mssql_bot.command
                             var (diffList, delList) = comparer.CompareRoutineNames(oldFunc, funcList);
                             diffList.ForEach(func =>
                             {
-                                differences += $"FN: {func} 、 ";
+                                differences += $"+異動 FN: {func} 、 ";
                             });
                             delList.ForEach(sp =>
                             {
-                                differences += $"刪除 FN: {sp} 、 ";
+                                differences += $"-刪除 FN: {sp} 、 ";
                             });
                         }
                         else
