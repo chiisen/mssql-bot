@@ -130,12 +130,15 @@ namespace mssql_bot.command
                         var differences = "";
                         if (oldSP != null) // 檢查是否為 null
                         {
-                            comparer
-                                .CompareRoutineNames(oldSP, spList)
-                                .ForEach(sp =>
-                                {
-                                    differences += $"SP: {sp} 、 ";
-                                });
+                            var (diffList, delList) = comparer.CompareRoutineNames(oldSP, spList);
+                            diffList.ForEach(sp =>
+                            {
+                                differences += $"SP: {sp} 、 ";
+                            });
+                            delList.ForEach(sp =>
+                            {
+                                differences += $"刪除 SP: {sp} 、 ";
+                            });
                         }
                         else
                         {
@@ -143,12 +146,15 @@ namespace mssql_bot.command
                         }
                         if (oldFunc != null) // 檢查是否為 null
                         {
-                            comparer
-                                .CompareRoutineNames(oldFunc, funcList)
-                                .ForEach(func =>
-                                {
-                                    differences += $"FN: {func} 、 ";
-                                });
+                            var (diffList, delList) = comparer.CompareRoutineNames(oldFunc, funcList);
+                            diffList.ForEach(func =>
+                            {
+                                differences += $"FN: {func} 、 ";
+                            });
+                            delList.ForEach(sp =>
+                            {
+                                differences += $"刪除 FN: {sp} 、 ";
+                            });
                         }
                         else
                         {
@@ -202,7 +208,13 @@ namespace mssql_bot.command
                 return JsonSerializer.Deserialize<List<SPData>>(jsonString);
             }
 
-            public List<string> CompareRoutineNames(
+            /// <summary>
+            /// 比對檔案差異或被刪除
+            /// </summary>
+            /// <param name="previousList"></param>
+            /// <param name="currentList"></param>
+            /// <returns></returns>
+            public (List<string> diffList, List<string> delList) CompareRoutineNames(
                 List<SPData> previousList,
                 List<SPData> currentList
             )
@@ -232,7 +244,18 @@ namespace mssql_bot.command
                     }
                 }
 
-                return differences;
+                var deletes = new List<string>();
+
+                // 檢查是不是被刪除了
+                foreach (var current in previousDefinitions)
+                {
+                    if (!currentDefinitions.TryGetValue(current.Key, out var currentDefinition))
+                    {
+                        deletes.Add(current.Key);
+                    }
+                }
+
+                return (differences, deletes);
             }
         }
     }
