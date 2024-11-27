@@ -17,6 +17,7 @@ namespace mssql_bot.command
         public string _YOUR_SLACK_WEBHOOK_URL = "_YOUR_SLACK_WEBHOOK_URL"; // 設定你的 Telegram Webhook URL
         public DBConfig _TARGET_CONNECTION_STRING = new();
         public string _TAG = "";
+        public List<string> _CLUB_LIST = [];
 
         private NotificationHelper _notificationHelper = new();
 
@@ -99,6 +100,38 @@ namespace mssql_bot.command
                             $"'{lastLogin.CLUB_ID}'"
                         );
                         var clubList = Program.ExecQueryClubTS(queryClubById, connection);
+                        
+                        // Club_Id 不重複才處理
+                        if(!_CLUB_LIST.Contains(lastLogin.CLUB_ID!))
+                        {
+                            // 廠商的 keyword 列表
+                            var clubKeywordList = new List<string> { "WM", "WE", "IDN" };
+                            clubKeywordList.ForEach(keyword =>
+                            {
+                                // clubList 裡面的 Game_id 欄位必須要有包還 keyword 的關鍵字才行
+                                var clubListByKeyword = clubList.FindAll(x => x.Game_id != null && x.Game_id.Contains(keyword));
+                                if (clubListByKeyword.Count == 0)
+                                {
+                                    // 發送 Discord 通知
+                                    _notificationHelper.SendDiscordNotification(
+                                        $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, 沒有廠商: {keyword} 的資料"
+                                    );
+
+                                    // 發送 TG 通知
+                                    _notificationHelper.SendTelegramNotification(
+                                        $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, 沒有廠商: {keyword} 的資料"
+                                    );
+
+                                    // 發送 Slack 通知
+                                    _notificationHelper.SendSlackNotification(
+                                        $"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, 沒有廠商: {keyword} 的資料"
+                                    );
+
+                                    _CLUB_LIST.Add(lastLogin.CLUB_ID!);
+                                }
+                            });
+                        }
+
                         clubList.ForEach(club =>
                         {
                             // 檢查 Game_id 不能有重複的情況
