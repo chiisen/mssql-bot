@@ -89,6 +89,8 @@ public partial class Program
             var club_id = reader["CLUB_ID"].ToString();
             var update_time = Convert.ToDateTime(reader["UPDATE_TIME"]).ToString("yyyy-MM-dd HH:mm:ss");
             var ip = reader["IP"].ToString();
+            var panZu = reader["PanZu"].ToString();
+            var club_Ename = reader["Club_Ename"].ToString();
 
             if (club_id != null && update_time != null && ip != null )
             {
@@ -102,7 +104,9 @@ public partial class Program
                     {
                         CLUB_ID = club_id,
                         UPDATE_TIME = update_time,
-                        IP = ip
+                        IP = ip,
+                        PanZu = panZu,
+                        Club_Ename = club_Ename
                     }
                 );
             }

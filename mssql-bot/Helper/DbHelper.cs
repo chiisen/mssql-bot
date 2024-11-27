@@ -34,11 +34,47 @@ namespace mssql_bot.helper
         ";
 
         public static string QUERY_LAST_LOGIN = @"
-        SELECT TOP (1000) CLUB_ID
-              ,UPDATE_TIME
-              ,IP
-          FROM HKNetGame_HJ.dbo.T_AloneLogin_Club_LastLogin
-          WHERE UPDATE_TIME >= @StartTime
+        SELECT TOP (1000) 
+        l.CLUB_ID,
+        l.UPDATE_TIME,
+        l.IP,
+        c.Club_Ename,
+        c.Club_Cname,
+        c.Franchiser_id,
+        c.Password,
+        c.Max_XinYong,
+        c.Now_XinYong,
+        c.Datetime,
+        c.Active,
+        c.PanZu,
+        c.MAC,
+        c.JieSuan_Time,
+        c.Login,
+        c.OnlineTime,
+        c.ChongZhi,
+        c.VIP_Flag,
+        c.Login_Game_Id,
+        c.Login_Server_Id,
+        c.TingYong_XinYong,
+        c.Lock,
+        c.Open_Server_id,
+        c.DongJie_Flag,
+        c.msrepl_tran_version,
+        c.Logout_Xinyong,
+        c.Login_EGame,
+        c.Login_Room,
+        c.UidKey,
+        c.FKey,
+        c.LimitLevel,
+        c.PlayerReturnTime,
+        c.Test_Flag,
+        c.UnitKey
+    FROM 
+        HKNetGame_HJ.dbo.T_AloneLogin_Club_LastLogin l
+    INNER JOIN 
+        HKNetGame_HJ.dbo.T_Club c ON l.CLUB_ID = c.Club_id
+    WHERE 
+        l.UPDATE_TIME >= @StartTime
         ";
 
         public static string QUERY_TS_CLUB = @"
@@ -83,6 +119,14 @@ namespace mssql_bot.helper
         /// 
         /// </summary>
         public string? IP { get; set; }
+        /// <summary>
+        /// 線別
+        /// </summary>
+        public string? PanZu { get; set; }
+        /// <summary>
+        /// 玩家帳號名稱
+        /// </summary>
+        public string? Club_Ename { get; set; }
     }
 
     /// <summary>
