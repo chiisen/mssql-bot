@@ -2,7 +2,7 @@
   "profiles": {
     "mssql-bot": {
       "commandName": "Project",
-      "commandLineArgs": "checkts DEV_H1"
+      "commandLineArgs": "checkdiffsp DEV_H1"
     }
   }
 }

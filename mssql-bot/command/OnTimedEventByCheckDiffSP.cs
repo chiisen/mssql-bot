@@ -133,32 +133,45 @@ namespace mssql_bot.command
                             var (diffList, delList) = comparer.CompareRoutineNames(oldSP, spList);
                             diffList.ForEach(sp =>
                             {
-                                differences += $"+異動 SP: {sp} 、 ";
+                                string author, description;
+                                GetInfo(sp, spList, out author, out description);
+
+                                differences += $"+異動 SP: {sp} (作者: {author}, 說明: {description})、 ";
                             });
                             delList.ForEach(sp =>
                             {
-                                differences += $"-刪除 SP: {sp} 、 ";
+                                string author, description;
+                                GetInfo(sp, oldSP, out author, out description);
+
+                                differences += $"-刪除 SP: {sp} (作者: {author}, 說明: {description})、 ";
                             });
                         }
                         else
                         {
-                            differences += $"SP: 【第一次建立】 、 ";
+                            differences += $"SP: 【SP 的 json 檔案第一次建立】 、 ";
                         }
+
                         if (oldFunc != null) // 檢查是否為 null
                         {
                             var (diffList, delList) = comparer.CompareRoutineNames(oldFunc, funcList);
                             diffList.ForEach(func =>
                             {
-                                differences += $"+異動 FN: {func} 、 ";
+                                string author, description;
+                                GetInfo(func, funcList, out author, out description);
+
+                                differences += $"+異動 FN: {func} (作者: {author}, 說明: {description})、 ";
                             });
-                            delList.ForEach(sp =>
+                            delList.ForEach(func =>
                             {
-                                differences += $"-刪除 FN: {sp} 、 ";
+                                string author, description;
+                                GetInfo(func, oldFunc, out author, out description);
+
+                                differences += $"-刪除 FN: {func} (作者: {author}, 說明: {description})、 ";
                             });
                         }
                         else
                         {
-                            differences += $"FN: 【第一次建立】 、 ";
+                            differences += $"FN: 【FN 的 json 檔案第一次建立】 、 ";
                         }
 
                         // 记录差异并准备提交到 Git
@@ -190,6 +203,25 @@ namespace mssql_bot.command
                     AnsiConsole.MarkupLine($"[red]An error occurred: {ex.Message}[/]");
                 }
             }
+        }
+
+        private static void GetInfo(string sp, List<SPData> spList, out string author, out string description)
+        {
+            // 在 spList 裡面找 sp 等於 ROUTINE_NAME 並在 ROUTINE_DEFINITION 中找到 'Author:' 後面的字串與 'Description:' 後面的字串
+            var spData = spList.Find(s => s.ROUTINE_NAME == sp);
+            author = spData!.ROUTINE_DEFINITION!.Substring(spData.ROUTINE_DEFINITION.IndexOf("Author:") + 7);
+            // author 後面有 /r /n 之後的字串都去掉
+            author = author.Split("\r\n")[0];
+            // author 要去掉前後兩邊的空白或 Tab
+            author = author.TrimStart(' ', '\t');
+
+            author = author.TrimEnd(' ', '\t');
+            description = spData.ROUTINE_DEFINITION.Substring(spData.ROUTINE_DEFINITION.IndexOf("Description:") + 12);
+            // description 後面有 /r /n 之後的字串都去掉
+            description = description.Split("\r\n")[0];
+            // description 要去掉前後兩邊的空白或 Tab
+            description = description.TrimStart(' ', '\t');
+            description = description.TrimEnd(' ', '\t');
         }
 
         /// <summary>
