@@ -177,20 +177,7 @@ namespace mssql_bot.command
                         // 记录差异并准备提交到 Git
                         GitHelper.AddAndCommit($"{_TAG}: BOT 差異 Commit({differences})", directory);
 
-                        // 發送 Discord 通知
-                        _notificationHelper.SendDiscordNotification(
-                            $"{_TAG}: 在提交中有差異。({differences})"
-                        );
-
-                        // 發送 TG 通知
-                        _notificationHelper.SendTelegramNotification(
-                            $"{_TAG}: 在提交中有差異。({differences})"
-                        );
-
-                        // 發送 Slack 通知
-                        _notificationHelper.SendSlackNotification(
-                            $"{_TAG}: 在提交中有差異。({differences})"
-                        );
+                        SendNotifications($"{_TAG}: 在提交中有差異。({differences})");
                     }
                     else
                     {
@@ -205,23 +192,79 @@ namespace mssql_bot.command
             }
         }
 
+        /// <summary>
+        /// 取得腳本作者和說明資訊
+        /// </summary>
+        /// <param name="sp"></param>
+        /// <param name="spList"></param>
+        /// <param name="author"></param>
+        /// <param name="description"></param>
         private static void GetInfo(string sp, List<SPData> spList, out string author, out string description)
         {
+            // 为 out 参数赋初始值
+            author = string.Empty;
+            description = string.Empty;
+
             // 在 spList 裡面找 sp 等於 ROUTINE_NAME 並在 ROUTINE_DEFINITION 中找到 'Author:' 後面的字串與 'Description:' 後面的字串
             var spData = spList.Find(s => s.ROUTINE_NAME == sp);
-            author = spData!.ROUTINE_DEFINITION!.Substring(spData.ROUTINE_DEFINITION.IndexOf("Author:") + 7);
-            // author 後面有 /r /n 之後的字串都去掉
-            author = author.Split("\r\n")[0];
-            // author 要去掉前後兩邊的空白或 Tab
-            author = author.TrimStart(' ', '\t');
+            if(spData == null)
+            {
+                return;
+            }
 
-            author = author.TrimEnd(' ', '\t');
-            description = spData.ROUTINE_DEFINITION.Substring(spData.ROUTINE_DEFINITION.IndexOf("Description:") + 12);
-            // description 後面有 /r /n 之後的字串都去掉
-            description = description.Split("\r\n")[0];
-            // description 要去掉前後兩邊的空白或 Tab
-            description = description.TrimStart(' ', '\t');
-            description = description.TrimEnd(' ', '\t');
+            // 先檢查字串裡面有沒有 "Author:" 才執行分析
+            if (spData.ROUTINE_DEFINITION!.Contains("Author:"))
+            {
+                author = spData!.ROUTINE_DEFINITION!.Substring(spData.ROUTINE_DEFINITION.IndexOf("Author:") + 7);
+                // author 後面有 /r /n 之後的字串都去掉
+                author = author.Split("\r\n")[0];
+                // author 要去掉前後兩邊的空白或 Tab
+                author = author.TrimStart(' ', '\t');
+                author = author.TrimEnd(' ', '\t');
+
+                description = spData.ROUTINE_DEFINITION.Substring(spData.ROUTINE_DEFINITION.IndexOf("Description:") + 12);
+                // description 後面有 /r /n 之後的字串都去掉
+                description = description.Split("\r\n")[0];
+                // description 要去掉前後兩邊的空白或 Tab
+                description = description.TrimStart(' ', '\t');
+                description = description.TrimEnd(' ', '\t');
+            }
+            else if (spData.ROUTINE_DEFINITION!.Contains("Author"))
+            {
+                var line = spData!.ROUTINE_DEFINITION!.Substring(spData.ROUTINE_DEFINITION.IndexOf("Author") + 6);
+                // author 後面有 /r /n 之後的字串都去掉並換行
+                line = line.Split("\r\n")[1];
+                
+                var l = line.Split('\t');
+                // l 移除空字串
+                l = l.Where(s => !string.IsNullOrEmpty(s)).ToArray();
+
+                // 第二個選項通常是作者名稱
+                author = l[1];
+                // 第二個選項通常是說明
+                description = l[2];
+
+                // author 要去掉後面的 Tab
+                author = author.TrimStart(' ', '\t');
+                // description 要去掉後面的 Tab
+                description = description.TrimEnd(' ', '\t');
+            }
+            else
+            {
+                author = "未知";
+                description = "未知";
+            }
+        }
+
+        /// <summary>
+        /// telegram, discord, slack 通知
+        /// </summary>
+        /// <param name="message"></param>
+        private void SendNotifications(string message)
+        {
+            _notificationHelper.SendDiscordNotification(message);
+            _notificationHelper.SendTelegramNotification(message);
+            _notificationHelper.SendSlackNotification(message);
         }
 
         /// <summary>
