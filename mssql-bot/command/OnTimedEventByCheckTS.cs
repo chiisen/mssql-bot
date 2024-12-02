@@ -91,7 +91,7 @@ namespace mssql_bot.command
                                 var clubListByKeyword = clubList.FindAll(x => x.Game_id != null && x.Game_id.Contains(keyword));
                                 if (clubListByKeyword.Count == 0)
                                 {
-                                    SendNotifications($"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, CLUB_ENAME: {lastLogin.Club_Ename}, PanZu: {lastLogin.PanZu}, 沒有廠商: {keyword} 的資料");
+                                    SendNotifications($"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, CLUB_ENAME: {lastLogin.Club_Ename}, PanZu: {lastLogin.PanZu}, 沒有廠商: {keyword} 的資料(IP: {lastLogin.IP})");
                                     _CLUB_LIST.Add(lastLogin.CLUB_ID!);
                                 }
                             });
@@ -104,7 +104,7 @@ namespace mssql_bot.command
                             {
                                 AnsiConsole.MarkupLine($"[red]Duplicate Game_id: {club.Game_id}[/]");
                                 AnsiConsole.MarkupLine($"[yellow]CLUB_ID: {lastLogin.CLUB_ID}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}[/]");
-                                SendNotifications($"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, CLUB_ENAME: {lastLogin.Club_Ename}, PanZu: {lastLogin.PanZu}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}");
+                                SendNotifications($"{_TAG}: 個人退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, CLUB_ENAME: {lastLogin.Club_Ename}, PanZu: {lastLogin.PanZu}, UnitKey: {club.UnitKey}, Flag_id: {club.Flag_id}, Game_id:{club.Game_id}, TuiSui: {club.TuiSui}(IP: {lastLogin.IP})");
                             }
                         });
 
@@ -120,7 +120,7 @@ namespace mssql_bot.command
                                 {
                                     AnsiConsole.MarkupLine($"[red]Duplicate Game_id: {unit.Game_id} AND Tag_Id: {unit.Tag_Id}[/]");
                                     AnsiConsole.MarkupLine($"[yellow]UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}[/]");
-                                    SendNotifications($"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, CLUB_ENAME: {lastLogin.Club_Ename}, PanZu: {lastLogin.PanZu}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}");
+                                    SendNotifications($"{_TAG}: 階層退水錯誤。CLUB_ID: {lastLogin.CLUB_ID}, CLUB_ENAME: {lastLogin.Club_Ename}, PanZu: {lastLogin.PanZu}, UnitKey: {unit.UnitKey}, Tag_Id: {unit.Tag_Id}, Game_id: {unit.Game_id}, TuiSui: {unit.TuiSui}(IP: {lastLogin.IP})");
                                 }
                             });
                         }
