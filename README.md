@@ -1,7 +1,7 @@
 # mssql-bot
 ![Alert_Notification](./images/Alert_Notification.jpg)
-1. MS-SQL 語法檢查機器人  
-2. MS-SQL 變更通知 Discord 機器人  
+1. MS-SQL 語法檢查機器人。  
+2. MS-SQL 變更通知 Discord 機器人。  
 
 # 初始設定
 必須本地安裝 Redis  
